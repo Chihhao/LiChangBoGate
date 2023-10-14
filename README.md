@@ -1,3 +1,5 @@
+利用手機遙控社區鐵捲門。
+
 # Iphone(IOS) 操作 SOP  
 * 下載 MQTT-Client  
 ![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/p1.png)
