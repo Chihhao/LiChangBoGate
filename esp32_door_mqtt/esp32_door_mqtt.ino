@@ -7,12 +7,8 @@
 #define RELAY_ON HIGH
 #define RELAY_OFF !RELAY_ON
 
-
-//const char* ssid     = "ch_wifi";
-//const char* password = "wifi_CH_1201";
 const char* ssid     = "Lizabo";
 const char* password = "035782503";
-
 
 const char* mqttServer = "mqttgo.io";
 const int mqttPort = 1883;
@@ -39,16 +35,11 @@ void callback(char*topic, byte* payload, unsigned int length) {
   }  
   _payload[i] = '\0';
     
-  //strncpy(_payload, (char*)payload, length);
   String strMsg = String(_payload);
   strMsg.trim();
   
   Serial.print(String("receive: ") + strTopic); 
   Serial.println(String(" | ") + strMsg); 
-//  for (int i = 0; i< length; i++) {
-//    Serial.print((char)payload[i]);
-//  }
-//  Serial.println();
 
   if(strTopic == String(TOPIC)){
     if(strMsg == String(MSG_UP)) {
@@ -80,14 +71,8 @@ void callback(char*topic, byte* payload, unsigned int length) {
 
 void checkWifi(){
   if(WiFi.status()== WL_CONNECTED){ return; }
-//  WiFi.disconnect();
-//  delay(10);
-//  WiFi.reconnect();
 
-
-  unsigned long currentMillis = millis();
-  // if WiFi is down, try reconnecting every CHECK_WIFI_TIME seconds
-  
+  unsigned long currentMillis = millis();  
   if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
     Serial.print(millis());
     Serial.println("Reconnecting to WiFi...");
@@ -98,13 +83,6 @@ void checkWifi(){
         Serial.println("WiFi Connected");
     }
   }
-
-  
-//  while (WiFi.status()!= WL_CONNECTED) {
-//    delay(500);
-//    Serial.println("Connecting to WiFi..");
-//  }  
-//  Serial.println("WiFi Connected");
 }
 
 void checkMQTT(){
@@ -142,12 +120,11 @@ void setup() {
   pinMode(PIN_RELAY_1, OUTPUT);
   pinMode(PIN_RELAY_2, OUTPUT);
   pinMode(PIN_RELAY_3, OUTPUT);
-  Serial.begin(9600);
-  delay(50); //很重要，拿掉可能會無法連Wifi 
-
-  WiFi.begin(ssid,password);
-
   
+  Serial.begin(9600);
+  delay(50); 
+
+  WiFi.begin(ssid,password);  
 }
  
 void loop() {
