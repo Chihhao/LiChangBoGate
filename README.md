@@ -14,6 +14,8 @@
 (7) 設定 上 Message: DoorUp  
 (8) 設定 停 Message: DoorStop  
 (9) 設定 下 Message: DoorDown  
+(10) 設定 QOS 0  
+(11) 關閉 Retain    
 ![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/p3.png)
 * 點選左下角 Control，進入使用畫面，即可使用  
 ![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/p4.png)
