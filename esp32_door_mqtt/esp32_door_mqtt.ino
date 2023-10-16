@@ -8,7 +8,7 @@
 #define RELAY_OFF !RELAY_ON
 
 const char* ssid     = "Lizabo";
-const char* password = "035782503";
+const char* password = "xxxxxxxx";
 
 const char* mqttServer = "mqttgo.io";
 const int mqttPort = 1883;
