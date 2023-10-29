@@ -13,7 +13,7 @@
 #define PIN_ECHO  32  //接收聲波腳位
 
 const char* ssid     = "Lizabo";
-const char* password = "*****";
+const char* password = "035782503";
 
 const char* mqttServer = "mqttgo.io";
 const int mqttPort = 1883;
