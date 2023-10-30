@@ -214,18 +214,21 @@ void Task_Sr04(void* parameter){
   int _keepTime = 2000;
 
   while(true){
-    unsigned long d = GetDistance();         
-    if(d >= 10 && d <= 120){        
-        if(millis() - _startMillis >= _keepTime){    
+    unsigned long d = GetDistance(); 
+    char _temp[10];
+    sprintf(_temp,"%d\n", d);
+    client.publish("ChihhaoTest", _temp);        
+    if(d >= 10 && d <= 150){        
+        //if(millis() - _startMillis >= _keepTime){    
             DoorUp();    
-            delay(4000);  
-            _startMillis = millis(); 
-        }     
+            delay(2000);  
+        //    _startMillis = millis(); 
+        //}     
     }
     else{
-        _startMillis = millis(); 
+        //_startMillis = millis(); 
     }
     
-    delay(800);
+    delay(1000);
   }    
 }
