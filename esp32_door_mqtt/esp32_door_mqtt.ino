@@ -215,9 +215,9 @@ void Task_Sr04(void* parameter){
 
   while(true){
     unsigned long d = GetDistance(); 
-    char _temp[10];
-    sprintf(_temp,"%d\n", d);
-    client.publish("ChihhaoTest", _temp);        
+    // char _temp[10];
+    // sprintf(_temp,"%d\n", d);
+    // client.publish("ChihhaoTest", _temp);        
     if(d >= 10 && d <= 150){        
         //if(millis() - _startMillis >= _keepTime){    
             DoorUp();    
