@@ -23,28 +23,28 @@
 ![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/p4.png)  
   
 # Android 操作 SOP   
-* 下載 MQTT Dashboard
-![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/downloadMqttDashboard.jpg)
-* 在 Broker 頁面新增項目
-(1) Client Id: 隨便
-(2) Server Name: mqttgo.io
-(3) Port No: 1883
-(4) User Name: 保持空白
-(5) Password: 保持空白
-![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/addBroker.png)
-![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/serverInfo.png)
-![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/connentSuccess.jpg)
-* 如上圖，連線成功後，在 Publish 頁面，新增三個按鈕
-(1) 開門 / LiChangBoBuilding / DoorUp
-(2) 停止 / LiChangBoBuilding / DoorStop
-(3) 關門 / LiChangBoBuilding / DoorDown
-![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/addPublishItems.png)
-![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/selectButton.png)
-![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/button1.jpg)
-![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/button2.jpg)
-![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/button3.jpg)
-* 完成後如下圖，按下按鈕即可操控鐵捲門
-![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/addThreeButtons.jpg)
+* 下載 MQTT Dashboard  
+![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/downloadMqttDashboard.jpg)  
+* 在 Broker 頁面新增項目  
+(1) Client Id: 隨便  
+(2) Server Name: mqttgo.io  
+(3) Port No: 1883  
+(4) User Name: 保持空白  
+(5) Password: 保持空白  
+![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/addBroker.png)  
+![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/serverInfo.png)  
+![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/connentSuccess.jpg)  
+* 如上圖，連線成功後，在 Publish 頁面，新增三個按鈕  
+(1) 開門 / LiChangBoBuilding / DoorUp  
+(2) 停止 / LiChangBoBuilding / DoorStop  
+(3) 關門 / LiChangBoBuilding / DoorDown  
+![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/addPublishItems.png)  
+![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/selectButton.png)  
+![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/button1.jpg)  
+![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/button2.jpg)  
+![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/button3.jpg)  
+* 完成後如下圖，按下按鈕即可操控鐵捲門  
+![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/addThreeButtons.jpg)  
 
 # 相關照片  
 ![image](https://github.com/Chihhao/esp32_door_mqtt/blob/main/image/p003.jpg)  
