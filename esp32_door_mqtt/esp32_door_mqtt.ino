@@ -17,7 +17,7 @@ const char* password = "*****";
 
 const char* mqttServer = "mqttgo.io";
 const int mqttPort = 1883;
-const char* TOPIC = "LiChangBoBuilding";
+const char* TOPIC = "*****";
 const char* MSG_UP = "DoorUp";
 const char* MSG_STOP = "DoorStop";
 const char* MSG_DOWN = "DoorDown";
