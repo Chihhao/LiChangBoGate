@@ -1,3 +1,9 @@
+// --- Supabase 初始化 ---
+const { createClient } = supabase;
+const SUPABASE_URL = 'https://ooumvivnvhbcdpphirrq.supabase.co'; 
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vdW12aXZudmhiY2RwcGhpcnJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1OTIwNjEsImV4cCI6MjA3NjE2ODA2MX0.eRst8MK1CdcS_bemecDBJrJxVFT9_ABTYXA7ylw5FNc'; 
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // --- DOM 元素選擇 ---
 const loginView = document.getElementById('login-view');
 const controlView = document.getElementById('control-view');
@@ -25,26 +31,33 @@ downButton.addEventListener('click', () => controlDoor('down'));
 // --- 核心函式 ---
 
 /**
- * @description 處理 Google 登入邏輯
- * TO-DO: 在此處整合 Supabase 的 signInWithOAuth()
+ * @description 處理 Google 登入邏輯，導向 Google 進行 OAuth 驗證
  */
-function handleGoogleLogin() {
-    console.log('正在嘗試使用 Google 登入...');
-    // 模擬登入成功
-    const fakeUser = {
-        email: 'user@example.com',
-        user_metadata: { full_name: '測試使用者' }
-    };
-    onLoginSuccess(fakeUser);
+async function handleGoogleLogin() {
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+    });
+    if (error) {
+        console.error('Google 登入失敗:', error);
+        updateSystemMessage('登入時發生錯誤，請稍後再試。', 'danger');
+    }
 }
 
 /**
  * @description 處理登出邏輯
+ * TO-DO: 登出成功後，由 onAuthStateChange 自動處理 UI 更新
  */
-function handleLogout() {
-    console.log('正在登出...');
-    currentUser = null;
-    updateUI();
+async function handleLogout() {
+    setControlsDisabled(true); // 防止登出過程中誤觸
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) {
+        console.error('登出失敗:', error);
+        updateSystemMessage('登出時發生錯誤。', 'danger');
+        setControlsDisabled(false); // 即使失敗也要重新啟用按鈕
+    }
+    // 登出成功後，onAuthStateChange 事件會被觸發，
+    // 並自動處理 currentUser = null 和 updateUI()。
+    // 因此這裡不需要手動呼叫它們。
 }
 
 
@@ -131,13 +144,30 @@ function setControlsDisabled(isDisabled) {
     });
 }
 
-/**
- * @description 頁面載入時執行的初始化函式
- * TO-DO: 在此處檢查 Supabase 的 session，以實現自動登入
- */
-function initialize() {
-    updateUI();
+// --- 程式進入點 ---
+
+// 監聽 Supabase Auth 的狀態變化 (登入、登出)
+supabaseClient.auth.onAuthStateChange((event, session) => {
+    // 當使用者登入時 (SIGNED_IN) 且 session 物件存在
+    if (event === 'SIGNED_IN' && session) {
+        onLoginSuccess(session.user);
+    } 
+    // 當使用者登出時 (SIGNED_OUT)
+    else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        updateUI();
+        setControlsDisabled(false); // 確保登出後按鈕是可用的 (雖然 view 已隱藏)
+    }
+});
+
+// 頁面初次載入時，檢查當前的 session 狀態以實現自動登入
+async function checkInitialSession() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+        onLoginSuccess(session.user);
+    } else {
+        updateUI();
+    }
 }
 
-// --- 程式進入點 ---
-initialize();
+checkInitialSession();

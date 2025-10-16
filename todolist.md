@@ -32,18 +32,18 @@
 | `created_at`| `timestamptz`| 建立時間 | `Default: now()` |
 ---
 
-#### **第二階段：整合使用者前端網頁與 Supabase (下一步)**
+#### 第二階段：整合使用者前端網頁與 Supabase (✅ 已完成)
 
 **目標**：將您現有的 HTML/CSS/JS 草稿與 Supabase 連接，實現真正的使用者登入、登出及狀態檢查。
 
-*   **[ ] 在 `index.html` 中引入 Supabase-js 函式庫**
+*   **[x] 在 `index.html` 中引入 Supabase-js 函式庫**
     *   在 `</body>` 標籤之前，加入官方的 CDN script 標籤：
       ```html
       <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script src="script.js"></script>
       ```
 
-*   **[ ] 在 `script.js` 檔案頂部初始化 Supabase Client**
+*   **[x] 在 `script.js` 檔案頂部初始化 Supabase Client**
     *   將第一階段取得的 URL 和 `anon` key 填入，建立一個全域的 supabase 物件。
       ```javascript
       const SUPABASE_URL = '您的_SUPABASE_URL';
@@ -51,7 +51,7 @@
       const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       ```
 
-*   **[ ] 修改 `handleGoogleLogin()` 函式**
+*   **[x] 修改 `handleGoogleLogin()` 函式**
     *   移除模擬程式碼，改為呼叫 Supabase 的 OAuth 登入方法。
       ```javascript
       async function handleGoogleLogin() {
@@ -65,7 +65,7 @@
       }
       ```
 
-*   **[ ] 修改 `handleLogout()` 函式**
+*   **[x] 修改 `handleLogout()` 函式**
     *   移除模擬程式碼，改為呼叫 Supabase 的登出方法。
       ```javascript
       async function handleLogout() {
@@ -74,15 +74,12 @@
           if (error) {
               console.error('登出失敗:', error);
               updateSystemMessage('登出時發生錯誤。', 'danger');
-          } else {
-              currentUser = null;
-              updateUI();
           }
           setControlsDisabled(false);
       }
       ```
 
-*   **[ ] 監聽認證狀態變化，取代 `initialize()`**
+*   **[x] 監聽認證狀態變化，取代 `initialize()`**
     *   這是最重要的一步，它會自動處理登入、登出、頁面重整後的所有狀態。用它來取代原本的 `initialize()` 函式。
       ```javascript
       // 監聽 Supabase Auth 的狀態變化
@@ -109,7 +106,7 @@
       checkInitialSession();
       ```
 
-#### **第三階段：建立後端函式並串接核心控制邏輯 (待辦)**
+#### 第三階段：建立後端函式並串接核心控制邏輯 (下一步)
 
 **目標**：建立一個安全的 Supabase Edge Function 來隱藏 MQTT 敏感資訊，並從前端觸發它。
 

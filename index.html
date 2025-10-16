@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>里長伯大廈停車場</title>
+    <title>停車場鐵捲門控制器</title>
     <!-- 引入 Material Design 圖示庫 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
     <!-- 引入自訂的 CSS 樣式表 -->
@@ -15,7 +15,12 @@
         <!-- 登入區塊 -->
         <div id="login-view">
             <h1>停車場鐵捲門控制器</h1>
-            <p>請先登入以進行遠端操作</p>
+
+            <div class="info-notice">
+                <i class="mdi mdi-information-outline"></i>
+                <span>需向管委會註冊 email 才能使用</span>
+            </div>
+
             <button id="login-button" class="btn btn-login">
                 <svg class="btn-login-icon" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
                     <g>
@@ -27,6 +32,7 @@
                 </svg>
                 使用 Google 登入
             </button>
+
         </div>
 
         <!-- 控制區塊 -->
@@ -69,8 +75,9 @@
 
     </div>
 
+    <!-- 引入 Supabase-js 函式庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- 引入自訂的 JavaScript 腳本 -->
     <script src="script.js"></script>
 </body>
 </html>
-

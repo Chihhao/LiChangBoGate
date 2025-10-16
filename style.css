@@ -49,6 +49,9 @@ h1 {
     font-size: 26px;
     letter-spacing: -0.025em;
 }
+#login-view h1 {
+    margin: 0 0 20px 0;
+}
 
 p {
     color: var(--text-secondary);
@@ -104,6 +107,8 @@ p {
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-bottom: 0px; 
+
 }
 
 .btn-login-icon {
