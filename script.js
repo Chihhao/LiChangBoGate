@@ -36,6 +36,9 @@ downButton.addEventListener('click', () => controlDoor('down'));
 async function handleGoogleLogin() {
     const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+            redirectTo: `${window.location.origin}${window.location.pathname}`
+        }
     });
     if (error) {
         console.error('Google 登入失敗:', error);

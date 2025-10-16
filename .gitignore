@@ -1,2 +1,15 @@
 
+# macOS
 .DS_Store
+
+# Supabase
+/supabase/config.toml  # 本地專案配置，通常不提交
+/supabase/volumes/     # 本地資料庫數據，不提交
+/supabase/.branches/   # 本地分支管理，不提交
+
+# Environment variables
+*.env
+*.env.local
+
+# Node.js
+/node_modules
