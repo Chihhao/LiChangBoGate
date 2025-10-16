@@ -106,21 +106,21 @@
       checkInitialSession();
       ```
 
-#### 第三階段：建立後端函式並串接核心控制邏輯 (下一步)
+#### 第三階段：建立後端函式並串接核心控制邏輯 (✅ 已完成)
 
 **目標**：建立一個安全的 Supabase Edge Function 來隱藏 MQTT 敏感資訊，並從前端觸發它。
 
-*   **[ ] 安裝 Supabase CLI 並登入**：在本機電腦的終端機中，安裝並設定好命令列工具。
-*   **[ ] 在專案資料夾中初始化 Supabase**：執行 `supabase init`。
-*   **[ ] 建立名為 `control-door` 的 Edge Function**：執行 `supabase functions new control-door`。
-*   **[ ] 在 Supabase 儀表板設定環境變數**：前往 `Project Settings -> Functions`，設定 `MQTT_BROKER_URL`, `MQTT_TOPIC` 等敏感資訊。
-*   **[ ] 在函式中撰寫核心邏輯**：編輯函式檔案，加入驗證使用者、查詢白名單、發布 MQTT 訊息的程式碼。
-*   **[ ] 部署 Edge Function 到雲端**：執行 `supabase functions deploy control-door`。
-*   **[ ] 修改前端 `controlDoor()` 函式**：
+*   **[x] 安裝 Supabase CLI 並登入**：在本機電腦的終端機中，安裝並設定好命令列工具。
+*   **[x] 在專案資料夾中初始化 Supabase**：執行 `supabase init`。
+*   **[x] 建立名為 `control-door` 的 Edge Function**：執行 `supabase functions new control-door`。
+*   **[x] 在 Supabase 儀表板設定環境變數**：前往 `Project Settings -> Functions`，設定 `MQTT_BROKER_URL`, `MQTT_TOPIC` 等敏感資訊。
+*   **[x] 在函式中撰寫核心邏輯**：編輯函式檔案，加入驗證使用者、查詢白名單、發布 MQTT 訊息的程式碼。
+*   **[x] 部署 Edge Function 到雲端**：執行 `supabase functions deploy control-door`。
+*   **[x] 修改前端 `controlDoor()` 函式**：
     *   將 `setTimeout` 移除，改為使用 `supabase.functions.invoke()` 來呼叫後端函式。
       ```javascript
       async function controlDoor(command) {
-          // ... (前段檢查邏輯不變)
+          // ... (前段檢查與 UI 邏輯不變)
           try {
               const { data, error } = await supabase.functions.invoke('control-door', {
                   body: { command: command }
@@ -136,7 +136,7 @@
       }
       ```
 
-#### **第四階段：開發管理者維護網頁 (待辦)**
+#### **第四階段：開發管理者維護網頁 (下一步)**
 
 **目標**：建立一個獨立頁面，讓管理者可以安全地新增或刪除白名單中的 Email。
 

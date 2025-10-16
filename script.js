@@ -64,24 +64,33 @@ async function handleLogout() {
 /**
  * @description 傳送控制指令到後端
  * @param {string} command - 指令 ('up', 'stop', 'down')
- * TO-DO: 在此處整合呼叫 Supabase Edge Function 的 fetch() 請求
  */
 async function controlDoor(command) {
     if (!currentUser) {
         updateSystemMessage('錯誤：請先登入！', 'danger');
         return;
     }
-
+ 
     setControlsDisabled(true);
     updateSystemMessage(`指令發送中: [${command.toUpperCase()}]...`, 'info');
-
+ 
     try {
-        // 模擬 1 秒的網路延遲
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        updateSystemMessage(`指令 [${command.toUpperCase()}] 已成功發送！`, 'success');
+        // 呼叫名為 'control-door' 的 Edge Function
+        const { data, error } = await supabaseClient.functions.invoke('control-door', {
+            body: { command: command }, // 將指令作為請求的 body 傳送
+        });
+ 
+        if (error) {
+            // 如果函式執行出錯，則拋出錯誤
+            throw error;
+        }
+ 
+        // 使用函式回傳的成功訊息更新 UI
+        updateSystemMessage(data.message, 'success');
     } catch (error) {
         console.error('指令發送失敗:', error);
-        updateSystemMessage('指令發送失敗，請稍後再試。', 'danger');
+        const errorMessage = error.context?.body?.error || error.message || '請檢查網路連線或稍後再試。';
+        updateSystemMessage(`指令失敗: ${errorMessage}`, 'danger');
     } finally {
         setControlsDisabled(false);
     }
