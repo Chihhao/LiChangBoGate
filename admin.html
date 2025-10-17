@@ -128,12 +128,22 @@
             margin-bottom: 5px;
             font-weight: 500;
         }
-        .form-group input[type="email"] {
+        .form-group input[type="email"],
+        .form-group select {
             width: 100%;
             padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 6px;
             font-size: 16px;
+        }
+        .form-group select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.7rem center;
+            background-size: 1.2em;
         }
         .form-group-checkbox {
             display: flex;
@@ -157,10 +167,10 @@
                 <svg class="btn-login-icon" version="1.1" xmlns="http://www.w.org/2000/svg" viewBox="0 0 48 48"><g><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path></g></svg>
                 使用 Google 登入
             </button>
-            <button id="debug-login-button" class="btn btn-debug-login">
+            <!--button id="debug-login-button" class="btn btn-debug-login">
                 <i class="mdi mdi-bug" style="margin-right: 8px;"></i>
                 DEBUG 快速登入
-            </button>
+            </button-->
         </div>
 
         <!-- 管理者操作區塊 (將由 JS 動態生成) -->
@@ -177,12 +187,38 @@
             <form id="user-form">
                 <input type="hidden" id="user-id-input">
                 <div class="form-group">
-                    <label for="email-input">Email</label>
-                    <input type="email" id="email-input" required placeholder="user@example.com">
+                    <input type="email" id="email-input" required placeholder="user@gmail.com">
                 </div>
 				<div class="form-group">
-                    <label for="resident-id-input">住戶 (僅UI，暫不儲存)</label>
-                    <input type="text" id="resident-id-input" placeholder="例如: A-101">
+                    <div style="display: flex; gap: 10px;">
+                        <select id="building-select" style="width: 50%;">
+                            <option value="">選擇棟別</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="E">E</option>
+                            <option value="F">F</option>
+                            <option value="G">G</option>
+                            <option value="H">H</option>
+                            <option value="I">I</option>
+                            <option value="J">J</option>
+                            <option value="K">K</option>
+                            <option value="L">L</option>
+                        </select>
+                        <select id="floor-select" style="width: 50%;">
+                            <option value="">選擇樓層</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group-checkbox">
                     <input type="checkbox" id="is-admin-checkbox">
