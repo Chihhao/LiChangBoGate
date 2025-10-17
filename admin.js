@@ -1,15 +1,18 @@
 // --- Supabase 初始化 ---
 const { createClient } = supabase;
-const SUPABASE_URL = 'https://ooumvivnvhbcdpphirrq.supabase.co'; 
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vdW12aXZudmhiY2RwcGhpcnJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1OTIwNjEsImV4cCI6MjA3NjE2ODA2MX0.eRst8MK1CdcS_bemecDBJrJxVFT9_ABTYXA7ylw5FNc'; 
+const SUPABASE_URL = 'https://ooumvivnvhbcdpphirrq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vdW12aXZudmhiY2RwcGhpcnJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1OTIwNjEsImV4cCI6MjA3NjE2ODA2MX0.eRst8MK1CdcS_bemecDBJrJxVFT9_ABTYXA7ylw5FNc';
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- DOM 元素 ---
+const mainContainer = document.getElementById('main-container');
 const loginView = document.getElementById('login-view');
 const adminView = document.getElementById('admin-view');
 const permissionDeniedView = document.getElementById('permission-denied-view');
+const userModal = document.getElementById('user-modal');
 
 let currentUser = null;
+let whitelistCache = []; // 用於儲存白名單資料，實現即時搜尋
 
 // --- 核心函式 ---
 
@@ -25,16 +28,12 @@ async function checkAdminStatus(user) {
             .single();
 
         if (error || !data || !data.is_admin) {
-            if (currentUser) currentUser.is_admin_flag = false;
             showPermissionDenied();
-            return;
+        } else {
+            // 確認是管理員，顯示管理介面並載入資料
+            showAdminView();
+            await loadWhitelist();
         }
-
-        // 確認是管理員，顯示管理介面並載入資料
-        showAdminView();
-        await loadWhitelist();
-        if (currentUser) currentUser.is_admin_flag = true;
-
     } catch (e) {
         console.error("檢查管理員權限時出錯:", e);
         showPermissionDenied();
@@ -42,116 +41,179 @@ async function checkAdminStatus(user) {
 }
 
 /**
- * 載入並顯示白名單列表
+ * 載入並快取白名單列表
  */
 async function loadWhitelist() {
-    const { data, error } = await supabaseClient
-        .from('whitelist')
-        .select('*')
-        .order('created_at', { ascending: false });
+    try {
+        const { data, error } = await supabaseClient
+            .from('whitelist')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-    if (error) {
+        if (error) throw error;
+        
+        whitelistCache = data; // 存入快取
+        renderTable(whitelistCache); // 渲染表格
+    } catch (error) {
         console.error("讀取白名單失敗:", error);
         adminView.innerHTML = `<p style="color: red;">讀取白名單失敗</p>`;
-        return;
     }
-
-    const listHtml = data.map(item => `
-        <div class="whitelist-item" id="item-${item.id}">
-            <span class="whitelist-email">${item.email} ${item.is_admin ? '(管理員)' : ''}</span>
-            <button class="delete-btn" data-id="${item.id}" data-email="${item.email}" title="刪除">
-                <i class="mdi mdi-delete-outline"></i>
-            </button>
-        </div>
-    `).join('');
-
-    adminView.querySelector('#whitelist-list').innerHTML = listHtml;
 }
 
 /**
- * 新增 Email 到白名單
+ * 渲染白名單表格
+ * @param {Array} data - 要渲染的使用者資料
  */
-async function handleAddEmail() {
-    const addButton = document.getElementById('add-email-btn');
-    addButton.disabled = true;
-    addButton.textContent = '新增中...';
-    const input = document.getElementById('new-email-input');
-    const email = input.value.trim();
+function renderTable(data) {
+    const tableBody = adminView.querySelector('#user-table-body');
+    if (!tableBody) return;
+
+    if (data.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="3" style="text-align: center;">沒有符合條件的資料</td></tr>`;
+        return;
+    }
+    
+    tableBody.innerHTML = data.map(item => `
+        <tr id="user-${item.id}">
+			<!-- 【第 1 欄】: 住戶 -->
+            <td>
+                ${item.resident_id || 'N/A'}
+            </td>
+            <!-- 【第 2 欄】: Email -->
+            <td>
+                <div class="email">${item.email}</div>
+                ${item.is_admin ? '<span style="color: #059669; font-size:12px; font-weight: bold;">管理員</span>' : ''}
+            </td>
+            <!-- 【第 3 欄】: 操作 -->
+            <td class="actions">
+                <button class="btn-action edit" data-id="${item.id}" title="編輯">
+                    <i class="mdi mdi-pencil-outline"></i>
+                </button>
+                <button class="btn-action delete" data-id="${item.id}" data-email="${item.email}" title="刪除">
+                    <i class="mdi mdi-delete-outline"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+
+/**
+ * 處理儲存操作 (新增或更新)
+ */
+async function handleSave() {
+    const saveBtn = document.getElementById('save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = '儲存中...';
+
+    const id = document.getElementById('user-id-input').value;
+    const email = document.getElementById('email-input').value.trim();
+	// 讀取 resident_id，但暫不使用
+    // const resident_id = document.getElementById('resident-id-input').value.trim();
+    const is_admin = document.getElementById('is-admin-checkbox').checked;
+
+    if (!email) {
+        alert('Email 為必填欄位');
+        saveBtn.disabled = false;
+        saveBtn.textContent = '儲存';
+        return;
+    }
 
     try {
-        if (!email) {
-            alert('請輸入 Email');
-            return;
+        let error;
+        // userData 物件中【暫時不要】包含 resident_id
+        const userData = { email, is_admin };
+
+        if (id) { // 更新
+            const { error: updateError } = await supabaseClient
+                .from('whitelist')
+                .update(userData)
+                .eq('id', id);
+            error = updateError;
+        } else { // 新增
+            const { error: insertError } = await supabaseClient
+                .from('whitelist')
+                .insert(userData);
+            error = insertError;
         }
 
-        const { error } = await supabaseClient
-            .from('whitelist')
-            .insert({ email: email });
+        if (error) throw error;
 
-        if (error) {
-            throw error;
-        }
-
-        input.value = '';
+        closeModal();
         await loadWhitelist(); // 重新載入列表
     } catch (error) {
-        console.error("新增 Email 失敗:", error);
-        alert(`新增失敗: ${error.message}`);
+        console.error("儲存失敗:", error);
+        alert(`儲存失敗: ${error.message}`);
     } finally {
-        addButton.disabled = false;
-        addButton.textContent = '新增';
+        saveBtn.disabled = false;
+        saveBtn.textContent = '儲存';
     }
 }
 
 /**
  * 從白名單刪除 Email
  */
-async function handleDeleteEmail(id, email) {
-    const deleteButton = document.querySelector(`.delete-btn[data-id='${id}']`);
-    if (deleteButton) deleteButton.disabled = true;
-    
-    try {
-        if (!confirm(`確定要刪除 ${email} 嗎？`)) {
-            return;
-        }
+async function handleDelete(id, email) {
+    if (!confirm(`確定要刪除 ${email} 嗎？`)) return;
 
+    try {
         const { error } = await supabaseClient
             .from('whitelist')
             .delete()
             .eq('id', id);
 
-        if (error) {
-            throw error;
-        }
+        if (error) throw error;
+        
         await loadWhitelist(); // 重新載入列表
     } catch (error) {
-        console.error("刪除 Email 失敗:", error);
+        console.error("刪除失敗:", error);
         alert(`刪除失敗: ${error.message}`);
-    } finally {
-        // 重新載入後按鈕已不存在，無需恢復狀態
-        // 但若 confirm 為 false，需恢復按鈕狀態
-        if (deleteButton && deleteButton.disabled) {
-            deleteButton.disabled = false;
-        }
     }
 }
 
-// --- UI 更新函式 ---
+// --- UI 更新與互動 ---
 
 function showAdminView() {
     loginView.classList.add('hidden');
     permissionDeniedView.classList.add('hidden');
     adminView.classList.remove('hidden');
+    mainContainer.style.maxWidth = '800px'; // 擴展容器寬度
+
+    // 渲染管理介面骨架
     adminView.innerHTML = `
-        <h1>管理者後台</h1>
-        <p>管理可使用鐵捲門的 Email 白名單</p>
-        <div class="add-form">
-            <input type="email" id="new-email-input" placeholder="輸入要新增的 Email">
-            <button id="add-email-btn" class="btn">新增</button>
+        <h1>住戶白名單管理</h1>
+        <div class="toolbar">
+            <input type="search" id="search-input" placeholder="依 Email 或住戶搜尋...">
+            <button id="add-new-btn" class="btn">
+                <i class="mdi mdi-plus" style="margin-right: 4px;"></i>新增住戶
+            </button>
         </div>
-        <div id="whitelist-list"></div>
+        <div class="table-container">
+            <table class="user-table">
+                <thead>
+                    <tr>
+						<th>住戶</th>
+                        <th>Email</th>						
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="user-table-body">
+                    <tr><td colspan="3" style="text-align: center;">載入中...</td></tr>
+                </tbody>
+            </table>
+        </div>
         <button id="logout-button" class="btn btn-logout">登出</button>
     `;
+
+    // 為動態生成的元素加上事件監聽
+      document.getElementById('search-input').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filteredData = whitelistCache.filter(user =>
+            user.email.toLowerCase().includes(searchTerm) ||
+            (user.resident_id && user.resident_id.toLowerCase().includes(searchTerm))
+        );
+        renderTable(filteredData);
+    });
 }
 
 function showPermissionDenied() {
@@ -168,11 +230,30 @@ function showPermissionDenied() {
     `;
 }
 
-// --- 事件綁定與初始化 ---
+function openModal(mode, userData = null) {
+    const form = document.getElementById('user-form');
+    form.reset(); // 清空表單
 
+    const modalTitle = document.getElementById('modal-title');
+    if (mode === 'edit') {
+        modalTitle.textContent = '編輯住戶資料';
+        document.getElementById('user-id-input').value = userData.id;
+        document.getElementById('email-input').value = userData.email;
+        document.getElementById('resident-id-input').value = userData.resident_id || '';
+        document.getElementById('is-admin-checkbox').checked = userData.is_admin;
+    } else {
+        modalTitle.textContent = '新增住戶';
+        document.getElementById('user-id-input').value = '';
+    }
+    userModal.classList.remove('hidden');
+}
+function closeModal() {
+    userModal.classList.add('hidden');
+}
+
+// --- 事件綁定與初始化 ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 頁面初次載入時，檢查當前的 session 狀態
-    document.getElementById('login-button').disabled = true; // 預設禁用，等待 JS 載入
+    // 檢查初始 session
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
         if (session) {
             currentUser = session.user;
@@ -180,7 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             loginView.classList.remove('hidden');
         }
-        document.getElementById('login-button').disabled = false; // 檢查完畢，啟用按鈕
     });
 
     // 監聽登入/登出狀態
@@ -189,25 +269,66 @@ document.addEventListener('DOMContentLoaded', () => {
             currentUser = session.user;
             checkAdminStatus(currentUser);
         } else if (!session && currentUser) {
-            window.location.reload(); // 登出後重新整理頁面
+            window.location.reload();
         }
     });
 
-    // 使用事件委派來處理動態新增的按鈕
+    // --- 全域點擊事件委派 ---
     document.body.addEventListener('click', (e) => {
-        if (e.target.matches('#login-button, #login-button *')) {
-            supabaseClient.auth.signInWithOAuth({ 
+        // Google 登入
+        if (e.target.closest('#login-button')) {
+            supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
-                options: { redirectTo: `${window.location.origin}${window.location.pathname}` } 
+                options: {
+                    redirectTo: window.location.origin + window.location.pathname
+                }
             });
         }
-        if (e.target.matches('#logout-button, #logout-button-denied')) supabaseClient.auth.signOut();
-        if (e.target.matches('#add-email-btn')) handleAddEmail();
         
-        const deleteButton = e.target.closest('.delete-btn');
-        if (deleteButton) {
-            const { id, email } = deleteButton.dataset;
-            handleDeleteEmail(id, email);
+        // DEBUG 登入
+        if (e.target.closest('#debug-login-button')) {
+            console.log('DEBUG模式登入...');
+            // 模擬一個管理員使用者物件
+            currentUser = { email: 'debug@admin.com', id: 'debug-user-id' };
+            // 手動模擬檢查管理員權限的流程
+            showAdminView();
+            loadWhitelist();
         }
+
+        // 登出
+        if (e.target.closest('#logout-button') || e.target.closest('#logout-button-denied')) {
+            supabaseClient.auth.signOut();
+        }
+        
+        // 新增按鈕
+        if (e.target.closest('#add-new-btn')) {
+            openModal('add');
+        }
+
+        // 編輯按鈕
+        const editBtn = e.target.closest('.btn-action.edit');
+        if (editBtn) {
+            const userId = editBtn.dataset.id;
+            const userData = whitelistCache.find(user => user.id == userId);
+            if (userData) openModal('edit', userData);
+        }
+        
+        // 刪除按鈕
+        const deleteBtn = e.target.closest('.btn-action.delete');
+        if (deleteBtn) {
+            const { id, email } = deleteBtn.dataset;
+            handleDelete(id, email);
+        }
+
+        // Modal 取消按鈕
+        if (e.target.closest('#cancel-btn')) {
+            closeModal();
+        }
+    });
+    
+    // Modal 表單提交
+    document.getElementById('user-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        handleSave();
     });
 });
