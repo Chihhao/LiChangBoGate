@@ -25,7 +25,7 @@ body {
     padding: 0; /* 移除所有 padding */
     display: flex;
     justify-content: center;
-    align-items: center; /* 恢復垂直置中 */
+    align-items: flex-start; /* 從頂部開始對齊，以適應 admin 頁面較長的內容 */
     min-height: 100svh; /* 使用最小可視區域高度，避免瀏覽器 UI 造成捲動 */
     text-align: center;
 }

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="format-detection" content="email=no"> <!-- 防止手機瀏覽器將 email 轉為連結 -->
     <title>社區鐵捲門管理後台</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
     <link rel="stylesheet" href="style.css">
@@ -128,7 +129,8 @@
             margin-bottom: 5px;
             font-weight: 500;
         }
-        .form-group input[type="email"],
+        .form-group input[type="text"],
+        .form-group input[type="email"], /* 保留對 email 類型的支援 */
         .form-group select {
             width: 100%;
             padding: 10px;
@@ -187,7 +189,7 @@
             <form id="user-form">
                 <input type="hidden" id="user-id-input">
                 <div class="form-group">
-                    <input type="email" id="email-input" required placeholder="user@gmail.com">
+                    <input type="text" id="email-input" required placeholder="user (會自動補完 @gmail.com)">
                 </div>
 				<div class="form-group">
                     <div style="display: flex; gap: 10px;">

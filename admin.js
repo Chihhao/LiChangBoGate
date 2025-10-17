@@ -61,6 +61,14 @@ async function loadWhitelist() {
 }
 
 /**
+ * 格式化 email，如果後綴是 @gmail.com 則省略
+ * @param {string} email 
+ * @returns {string} 格式化後的 email
+ */
+function formatEmail(email) {
+    return email.endsWith('@gmail.com') ? email.replace('@gmail.com', '') : email;
+}
+/**
  * 渲染白名單表格
  * @param {Array} data - 要渲染的使用者資料
  */
@@ -79,9 +87,9 @@ function renderTable(data) {
             <td>
                 ${item.resident_id || 'N/A'}
             </td>
-            <!-- 【第 2 欄】: Email -->
+            <!-- 【第 2 欄】: Google 帳號 -->
             <td>
-                <div class="email">${item.email}</div>
+                <div class="email">${formatEmail(item.email)}</div>
                 ${item.is_admin ? '<span style="color: #059669; font-size:12px; font-weight: bold;">管理員</span>' : ''}
             </td>
             <!-- 【第 3 欄】: 操作 -->
@@ -107,7 +115,7 @@ async function handleSave() {
     saveBtn.textContent = '儲存中...';
 
     const id = document.getElementById('user-id-input').value;
-    const email = document.getElementById('email-input').value.trim();
+    let email = document.getElementById('email-input').value.trim();
     const is_admin = document.getElementById('is-admin-checkbox').checked;
     const building = document.getElementById('building-select').value;
     const floor = document.getElementById('floor-select').value;
@@ -121,6 +129,19 @@ async function handleSave() {
         saveBtn.disabled = false;
         saveBtn.textContent = '儲存';
         return;
+    }
+
+    // 驗證並自動補完 @gmail.com
+    if (email.includes('@')) {
+        if (!email.endsWith('@gmail.com')) {
+            alert('Email 格式錯誤，目前僅支援 @gmail.com 的信箱。');
+            saveBtn.disabled = false;
+            saveBtn.textContent = '儲存';
+            return;
+        }
+    } else {
+        // 如果不含 @，自動補上後綴
+        email += '@gmail.com';
     }
 
     try {
@@ -186,7 +207,7 @@ function showAdminView() {
     adminView.innerHTML = `
         <h1>住戶白名單管理</h1>
         <div class="toolbar">
-            <input type="search" id="search-input" placeholder="依 Email 或住戶搜尋...">
+            <input type="search" id="search-input" placeholder="依 Google 帳號 或住戶搜尋...">
             <button id="add-new-btn" class="btn">
                 <i class="mdi mdi-plus" style="margin-right: 4px;"></i>新增住戶
             </button>
@@ -196,7 +217,7 @@ function showAdminView() {
                 <thead>
                     <tr>
 						<th>住戶</th>
-                        <th>Email</th>						
+                        <th>Google 帳號</th>						
                         <th>操作</th>
                     </tr>
                 </thead>
