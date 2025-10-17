@@ -108,9 +108,13 @@ async function handleSave() {
 
     const id = document.getElementById('user-id-input').value;
     const email = document.getElementById('email-input').value.trim();
-	// 讀取 resident_id，但暫不使用
-    // const resident_id = document.getElementById('resident-id-input').value.trim();
     const is_admin = document.getElementById('is-admin-checkbox').checked;
+    const building = document.getElementById('building-select').value;
+    const floor = document.getElementById('floor-select').value;
+    let resident_id = 'N/A'; // 預設值
+    if (building && floor) {
+        resident_id = building + floor; // 如果都有選，才組合
+    }
 
     if (!email) {
         alert('Email 為必填欄位');
@@ -121,8 +125,7 @@ async function handleSave() {
 
     try {
         let error;
-        // userData 物件中【暫時不要】包含 resident_id
-        const userData = { email, is_admin };
+        const userData = { email, is_admin, resident_id };
 
         if (id) { // 更新
             const { error: updateError } = await supabaseClient
@@ -234,19 +237,34 @@ function openModal(mode, userData = null) {
     const form = document.getElementById('user-form');
     form.reset(); // 清空表單
 
+    const buildingSelect = document.getElementById('building-select');
+    const floorSelect = document.getElementById('floor-select');
     const modalTitle = document.getElementById('modal-title');
+
     if (mode === 'edit') {
         modalTitle.textContent = '編輯住戶資料';
         document.getElementById('user-id-input').value = userData.id;
         document.getElementById('email-input').value = userData.email;
-        document.getElementById('resident-id-input').value = userData.resident_id || '';
         document.getElementById('is-admin-checkbox').checked = userData.is_admin;
+
+        const residentId = userData.resident_id;
+        if (residentId && residentId !== 'N/A' && residentId.length >= 2) {
+            const building = residentId.charAt(0); // 取第一個字元為棟別
+            const floor = residentId.substring(1); // 取剩餘部分為樓層
+            buildingSelect.value = building;
+            floorSelect.value = floor;
+        } else {
+            buildingSelect.value = "";
+            floorSelect.value = "";
+        }
+        
     } else {
         modalTitle.textContent = '新增住戶';
         document.getElementById('user-id-input').value = '';
     }
     userModal.classList.remove('hidden');
 }
+
 function closeModal() {
     userModal.classList.add('hidden');
 }
