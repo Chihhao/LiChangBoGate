@@ -297,7 +297,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 登出
         if (e.target.closest('#logout-button') || e.target.closest('#logout-button-denied')) {
-            supabaseClient.auth.signOut();
+            // 使用 async 讓 try...catch 生效
+            (async () => {
+                try {
+                    const { error } = await supabaseClient.auth.signOut();
+                    if (error) throw error;
+                } catch (error) {
+                    console.warn('Sign out failed, possibly because session was already invalid:', error.message);
+                } finally {
+                    // 【關鍵】無論成功或失敗，都強制重整頁面，回到登入畫面
+                    window.location.reload();
+                }
+            })();
         }
         
         // 新增按鈕
