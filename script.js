@@ -107,12 +107,60 @@ async function controlDoor(command) {
 }
 
 /**
- * @description 登入成功後要執行的動作
+ * @description 登入成功後要執行的動作（包含白名單驗證）
  * @param {object} user - Supabase 回傳的使用者物件
  */
-function onLoginSuccess(user) {
+async function onLoginSuccess(user) {
     currentUser = user;
-    updateUI();
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('whitelist')
+            .select('resident_id')
+            .eq('email', user.email)
+            .single(); // .single() 會在找不到資料時回傳 error，這對我們很有利
+
+        // 如果有任何錯誤 (包括找不到使用者)，就拋出錯誤，讓 catch 區塊來處理
+        if (error) {
+            throw error;
+        }
+
+        // --- 驗證成功路徑 ---
+        // 1. 顯示操作介面
+        loginView.classList.add('hidden');
+        controlView.classList.remove('hidden');
+        
+        // 2. 根據 resident_id 顯示對應的歡迎訊息
+        if (data.resident_id && data.resident_id !== 'N/A') {
+            updateSystemMessage(`${data.resident_id} 住戶您好！`, 'info');
+        } else {
+            // 如果使用者在白名單內，但沒有住戶編號，就顯示備用訊息
+            const fallbackName = currentUser.user_metadata.full_name || currentUser.email;
+            updateSystemMessage(`你好, ${fallbackName}`, 'info');
+        }
+
+    } catch (dbError) {
+        // --- 驗證失敗路徑 ---
+        console.error("權限驗證失敗:", dbError.message);
+
+        // 1. 停留在登入頁面，不顯示操作介面
+        loginView.classList.remove('hidden');
+        controlView.classList.add('hidden');
+
+        // 2. 在登入頁面的提示框中，顯示明確的錯誤訊息
+        const noticeElement = loginView.querySelector('.info-notice');
+        if (noticeElement) {
+            // 改變提示框的樣式，使其看起來像一個錯誤警告
+            noticeElement.style.backgroundColor = '#fef2f2'; // 淡紅色背景
+            noticeElement.style.color = '#991b1b';           // 深紅色文字
+            
+            // 更新圖示與文字
+            noticeElement.innerHTML = `
+                <i class="mdi mdi-alert-circle-outline"></i>
+                <span>您沒有權限！請向管委會申請使用。</span>
+            `;
+        }
+    }
 }
 
 /**
@@ -122,8 +170,6 @@ function updateUI() {
     if (currentUser) {
         loginView.classList.add('hidden');
         controlView.classList.remove('hidden');
-        // 登入後，更新系統訊息為歡迎詞
-        updateSystemMessage(`你好, ${currentUser.user_metadata.full_name || currentUser.email}`, 'info');
     } else {
         loginView.classList.remove('hidden');
         controlView.classList.add('hidden');
