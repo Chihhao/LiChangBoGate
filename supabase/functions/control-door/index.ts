@@ -19,6 +19,31 @@ function createJsonResponse(body: object, status: number) {
   });
 }
 
+/**
+ * @description Helper function to log an action to the 'logs' table.
+ */
+async function logAction(
+  adminClient: any,
+  userId: string,
+  userEmail: string,
+  command: string,
+  status: "success" | "failure",
+  details: string
+) {
+  try {
+    const { error: logError } = await adminClient.from("logs").insert({
+      user_id: userId,
+      user_email: userEmail,
+      command: command,
+      status: status,
+      details: details,
+    });
+    if (logError) throw logError;
+  } catch (error) {
+    console.error("Failed to write to log table:", error.message);
+  }
+}
+
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -26,6 +51,11 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // 提前從請求中解析 body，以便在發生錯誤時也能記錄
+    const body = await req.json();
+    const { command } = body;
+    let user: any = null; // 在 try 區塊外部宣告 user
+
     // 1. 建立一個模擬使用者的 client，專門用來驗證 JWT 並取得使用者資訊
     const userClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -34,10 +64,16 @@ Deno.serve(async (req: Request) => {
     );
 
     // 2. Get user from Authorization header
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    const { data: { user: authUser }, error: userError } = await userClient.auth.getUser();
+    user = authUser; // 將 user 指派給外部變數
+
     if (userError || !user) {
       console.error("User auth error:", userError?.message);
-      return createJsonResponse({ error: "無效的認證或未登入" }, 401);
+      const errorMsg = "無效的認證或未登入";
+      // 即使驗證失敗，也嘗試記錄（如果能解析出 command 的話）
+      // 注意：此時 user 為 null，所以 user_id 和 user_email 會是 null
+      await logAction(createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!), null, "unknown", command || "unknown", "failure", errorMsg);
+      return createJsonResponse({ error: errorMsg }, 401);
     }
 
     // 建立一個擁有 service_role 權限的 client (可繞過 RLS)，專門用來執行後端管理任務
@@ -54,12 +90,12 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (whitelistError || !whitelistEntry) {
-      console.error(`Whitelist check failed for ${user.email}:`, whitelistError?.message);
-      return createJsonResponse({ error: "權限不足，您的帳號未在白名單中" }, 403);
+      const errorMsg = "權限不足，您的帳號未在白名單中";
+      console.error(`Whitelist check failed for ${user.email}:`, whitelistError?.message || "Not in whitelist");
+      await logAction(adminClient, user.id, user.email, command, "failure", errorMsg);
+      return createJsonResponse({ error: errorMsg }, 403);
     }
 
-    // 4. Get and validate the command from the request body
-    const { command } = await req.json();
     const allowedCommands = ['up', 'stop', 'down'];
     if (!allowedCommands.includes(command)) {
       return createJsonResponse({ error: `無效的指令: ${command}` }, 400);
@@ -89,6 +125,7 @@ Deno.serve(async (req: Request) => {
           if (err) {
             console.error("MQTT publish error:", err);
             mqttClient.end();
+            logAction(adminClient, user.id, user.email, command, "failure", `發布 MQTT 指令失敗: ${err.message}`);
             reject(new Error("發布 MQTT 指令失敗"));
             return;
           }
@@ -101,15 +138,20 @@ Deno.serve(async (req: Request) => {
       mqttClient.on('error', (err) => {
         console.error("MQTT connection error:", err);
         mqttClient.end();
+        logAction(adminClient, user.id, user.email, command, "failure", `無法連接至 MQTT 伺服器: ${err.message}`);
         reject(new Error("無法連接至 MQTT 伺服器"));
       });
     });
 
     // 7. Return success response
-    return createJsonResponse({ message: `指令 [${command.toUpperCase()}] 已成功發送！` }, 200);
+    const successMsg = `指令 [${command.toUpperCase()}] 已成功發送！`;
+    await logAction(adminClient, user.id, user.email, command, "success", successMsg);
+    return createJsonResponse({ message: successMsg }, 200);
 
   } catch (error) {
     console.error("Unhandled function error:", error);
+    // 在最終的 catch 區塊也加入 log，捕捉所有未預期的錯誤
+    // await logAction(adminClient, user?.id, user?.email, command || "unknown", "failure", error.message);
     return createJsonResponse({ error: error.message || "伺服器發生未知錯誤" }, 500);
   }
 });
