@@ -14,7 +14,21 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  // 在這裡可以清理舊的快取
+  // 強制新的 Service Worker 立即控制頁面
+  event.waitUntil(clients.claim());
+
+  // 清理所有舊的快取
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          // 在這裡可以加入邏輯，只刪除特定前綴的快取，但為了徹底解決問題，我們先全部刪除
+          console.log('Service Worker: Deleting old cache:', cacheName);
+          return caches.delete(cacheName);
+        })
+      );
+    })
+  );
 });
 
 self.addEventListener('fetch', (event) => {
