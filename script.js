@@ -90,22 +90,18 @@ function handleDebugLogin() {
  * TO-DO: 登出成功後，由 onAuthStateChange 自動處理 UI 更新
  */
 async function handleLogout() {
-    setControlsDisabled(true); // 防止登出過程中誤觸
+    // 登出按鈕通常不需要禁用，因為 onAuthStateChange 會處理 UI 切換
     try {
         const { error } = await supabaseClient.auth.signOut();
-        // 如果 signOut 過程本身出錯 (例如 403 錯誤)，就拋出它
         if (error) {
-            // 為了讓 finally 區塊能捕捉到，我們手動拋出
             throw error;
         }
+        // 登出成功後，onAuthStateChange 事件會自動觸發，
+        // 並由它來處理 currentUser = null 和 updateUI()。
+        // 因此這裡不需要手動呼叫。
     } catch (error) {
-        // 在控制台靜默地記錄錯誤，但不要打斷流程
-        console.warn('Sign out failed, possibly because session was already invalid:', error.message);
-    } finally {
-        // 【關鍵】無論成功或失敗，都強制更新 UI 到登出狀態
-        currentUser = null;
-        updateUI();
-        setControlsDisabled(false);
+        console.error('登出失敗:', error);
+        updateSystemMessage(`登出時發生錯誤: ${error.message}`, 'danger');
     }
 }
 
