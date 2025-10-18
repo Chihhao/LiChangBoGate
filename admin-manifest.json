@@ -2,7 +2,7 @@
   "name": "里長伯遙控器管理後台",
   "short_name": "里長伯後台",
   "description": "里長伯遙控器管理後台",
-  "start_url": "/admin.html?source=pwa",
+  "start_url": "/LiChangBoGate/admin.html",
   "display": "standalone",
   "background_color": "#f9fafb",
   "theme_color": "#374151",
