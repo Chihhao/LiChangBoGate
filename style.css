@@ -122,6 +122,7 @@ p {
     padding: 10px 16px; 
     font-size: 40px;
 	background-color: #F3F4F6; /* [更新] 質感淺灰色 */
+    white-space: nowrap; /* 限制文字不換行 */
 }
 
 /* 登出按鈕樣式 */
