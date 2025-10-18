@@ -89,10 +89,19 @@ function handleDebugLogin() {
  * @description 處理登出邏輯
  */
 async function handleLogout() {
-    // 僅清除本地 session，避免因 session 失效導致 API 報錯。
+    // 增加一層保護：如果因 session 過期等原因，本地已經是登出狀態，
+    // 就直接更新 UI，避免呼叫 signOut 產生不必要的錯誤。
+    if (!currentUser) {
+        console.log('Session not found, updating UI directly.');
+        updateUI();
+        return;
+    }
+
+    // 如果 session 存在，則正常執行登出。
     // onAuthStateChange 會監聽到登出事件並自動處理 UI 更新。
-    const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
-    if (error) console.error('登出時發生錯誤:', error);
+    const { error } = await supabaseClient.auth.signOut();
+    // 登出時的 AuthSessionMissingError 可以安全地忽略，因為 onAuthStateChange 會處理好 UI。
+    if (error && error.name !== 'AuthSessionMissingError') console.error('登出時發生錯誤:', error);
 }
 
 
@@ -214,7 +223,7 @@ async function onLoginSuccess(user) {
  * @description 根據登入狀態更新 UI 介面
  */
 function updateUI() {
-    if (currentUser) {
+    if (currentUser && !currentUser.isDebug) { // DEBUG 模式下 currentUser 是手動設定的，不依賴 session
         loginView.classList.add('hidden');
         controlView.classList.remove('hidden');
     } else {

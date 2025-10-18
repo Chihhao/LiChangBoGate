@@ -360,9 +360,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 登出
         if (e.target.closest('#logout-button') || e.target.closest('#logout-button-denied')) {
-            // 僅清除本地 session，避免因 session 失效導致 API 報錯。
-            // onAuthStateChange 會監聽到登出事件並自動重整頁面。
-            supabaseClient.auth.signOut({ scope: 'local' });
+            // 增加保護：如果本地已是登出狀態，直接重整頁面。
+            if (!currentUser) {
+                window.location.reload();
+            } else {
+                // 正常執行登出，onAuthStateChange 會監聽並重整頁面。
+                const { error } = await supabaseClient.auth.signOut();
+                if (error && error.name !== 'AuthSessionMissingError') console.error('登出時發生錯誤:', error);
+            }
         }
         
         // 新增按鈕
