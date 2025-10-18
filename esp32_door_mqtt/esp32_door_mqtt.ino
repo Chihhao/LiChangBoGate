@@ -14,6 +14,21 @@
 #define PIN_TRIG  33  //發出聲波腳位
 #define PIN_ECHO  32  //接收聲波腳位
 
+// --- 系統行為常數定義 ---
+const unsigned long WIFI_RECONNECT_INTERVAL = 30000; // Wi-Fi 斷線後重連間隔 (ms)
+const unsigned long MQTT_RECONNECT_INTERVAL = 5000;  // MQTT 斷線後重連間隔 (ms)
+const unsigned long DAILY_REBOOT_INTERVAL_MS = 24 * 3600 * 1000UL; // 每日重啟間隔 (24小時)
+
+// --- 超音波感測器常數定義 ---
+const unsigned long SENSOR_TRIG_DISTANCE_MIN = 10;   // 觸發感測的最小距離 (cm)
+const unsigned long SENSOR_TRIG_DISTANCE_MAX = 150;  // 觸發感測的最大距離 (cm)
+const unsigned long SENSOR_PULSEIN_TIMEOUT = 50000;  // pulseIn 超時 (us)，避免感測器異常時卡住
+const unsigned long SENSOR_SENSE_INTERVAL_MS = 250;      // 每 250ms 偵測一次
+const unsigned long SENSOR_TRIGGER_DURATION_MS = 1000;   // 需要持續偵測到 1 秒才觸發
+const unsigned long SENSOR_COOLDOWN_DURATION_MS = 15000; // 觸發後冷卻 15 秒
+
+const unsigned long INVALID_DISTANCE = 999;
+
 // NTP 伺服器與時區設定 (台灣為 GMT+8)
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 8 * 3600;
@@ -31,50 +46,33 @@ PubSubClient client(espClient);
 unsigned long wifiReconnectPrevMillis = 0;
 unsigned long mqttReconnectPrevMillis = 0;
 
-void callback(char*topic, byte* payload, unsigned int length) {  
-  String strTopic = String((char*)topic);
-  strTopic.trim();
-
-  char _payload[30];
-  int i=0;
-  while(i<length){
-    _payload[i] = (char)payload[i];
-    i++;
-  }  
-  _payload[i] = '\0';
-    
-  String strMsg = String(_payload);
-  strMsg.trim();
+void callback(char* topic, byte* payload, unsigned int length) {  
+  String strMsg;
+  strMsg.reserve(length); // 預先分配記憶體
+  for (int i = 0; i < length; i++) { strMsg += (char)payload[i]; }
+  String strTopic = String(topic);
   
-  Serial.print(String("receive: ") + strTopic); 
-  Serial.println(String(" | ") + strMsg); 
+  Serial.print("receive: "); Serial.print(strTopic); 
+  Serial.print(" | "); Serial.println(strMsg); 
 
   // 處理新 Topic 的指令
-  if (strTopic == String(TOPIC)) {
+  if (strTopic == TOPIC) { 
     processCommand(strMsg);
     return;
   }
 
   // 處理舊 Topic 的指令，並加上日期檢查
-  if (strTopic == String(TOPIC_OLD)) {
+  if (strTopic == TOPIC_OLD) { 
     struct tm timeinfo;
     if (!getLocalTime(&timeinfo)) {
       Serial.println("無法取得時間，舊 Topic 指令被拒絕。");
       return;
     }
 
-    // 檢查日期是否在 2025/10/31 之後
-    // tm_year 是從 1900 年起算, 所以 2025 年是 125
-    // tm_mon 是 0-11, 所以 10 月是 9
-    bool isExpired = false;
-    if (timeinfo.tm_year > 125) { // > 2025 年
-      isExpired = true;
-    } else if (timeinfo.tm_year == 125 && timeinfo.tm_mon > 9) { // 2025 年且 > 10 月
-      isExpired = true;
-    }
-
+    int currentYearMonth = (timeinfo.tm_year * 100) + (timeinfo.tm_mon + 1);
+    bool isExpired = currentYearMonth >= 202511; // 檢查是否為 2025 年 11 月或之後
     if (isExpired) {
-      Serial.println("舊 Topic 已於 2025/10/31 後失效，指令被忽略。");
+      Serial.println("舊 Topic 已於 2025/11/01 起失效，指令被忽略。");
       return;
     }
 
@@ -83,9 +81,13 @@ void callback(char*topic, byte* payload, unsigned int length) {
 }
 
 void processCommand(String msg) {
-  if (msg == String(MSG_UP))       DoorUp();
-  else if (msg == String(MSG_STOP)) DoorStop();
-  else if (msg == String(MSG_DOWN)) DoorDown();
+  if (msg == MSG_UP) {
+    triggerRelay(PIN_RELAY_1, "UP");
+  } else if (msg == MSG_STOP) {
+    triggerRelay(PIN_RELAY_2, "STOP");
+  } else if (msg == MSG_DOWN) {
+    triggerRelay(PIN_RELAY_3, "DOWN");
+  }
   else Serial.println("Unknown command received.");
 }
 
@@ -94,7 +96,7 @@ void setup() {
   digitalWrite(LED_BUILTIN, LOW);
 
   pinMode(PIN_TRIG, OUTPUT); 
-  pinMode(PIN_ECHO, INPUT_PULLUP); 
+  pinMode(PIN_ECHO, INPUT); 
   
   pinMode(PIN_RELAY_1, OUTPUT);
   pinMode(PIN_RELAY_2, OUTPUT);
@@ -106,7 +108,6 @@ void setup() {
   
   WiFi.begin(ssid,password);  
 
-  // 初始化NTP時間
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
   OTA_Begin();
@@ -116,10 +117,8 @@ void setup() {
 }
 
 void OTA_Begin(){
-    // 從 credentials.h 讀取主機名稱
     ArduinoOTA.setHostname(ota_hostname);
   
-    // 從 credentials.h 讀取密碼
     ArduinoOTA.setPassword(ota_password);
     
     ArduinoOTA
@@ -169,7 +168,7 @@ void maintainConnections() {
     digitalWrite(LED_BUILTIN, LOW); // 熄滅 LED 燈號表示斷線
     
     // 每 30 秒嘗試重連一次
-    if (currentMillis - wifiReconnectPrevMillis >= 30000) {
+    if (currentMillis - wifiReconnectPrevMillis >= WIFI_RECONNECT_INTERVAL) {
       Serial.println("Reconnecting to WiFi...");
       WiFi.disconnect();
       WiFi.reconnect();
@@ -183,19 +182,29 @@ void maintainConnections() {
     digitalWrite(LED_BUILTIN, LOW); // 熄滅 LED 燈號表示斷線
 
     // 每 5 秒嘗試重連一次
-    if (currentMillis - mqttReconnectPrevMillis >= 5000) {
+    if (currentMillis - mqttReconnectPrevMillis >= MQTT_RECONNECT_INTERVAL) {
       Serial.println("Attempting MQTT connection...");
       client.setServer(mqttServer, mqttPort);
       client.setCallback(callback);
-      
-      if (client.connect("ESP32_LiChangBoBuilding")) {
+
+      String clientId = "esp32-door-";
+      clientId += String(WiFi.macAddress());
+
+      if (client.connect(clientId.c_str())) {
         Serial.println("MQTT Connected!");
         digitalWrite(LED_BUILTIN, HIGH); // 點亮 LED
+
         // 連線成功後，重新訂閱主題
         client.subscribe(TOPIC);
         client.subscribe(TOPIC_OLD);
         Serial.print("Subscribed to: "); Serial.println(TOPIC);
         Serial.print("Subscribed to old: "); Serial.println(TOPIC_OLD);
+
+        // 發送上線狀態訊息 (只在連線成功當下發送一次)
+        String statusTopic = String(TOPIC) + "/status";
+        String onlineMessage = "{\"status\":\"online\", \"ip\":\"" + WiFi.localIP().toString() + "\"}";
+        client.publish(statusTopic.c_str(), onlineMessage.c_str());
+        Serial.printf("Published online status to: %s\n", statusTopic.c_str());
       } else {
         Serial.print("MQTT connect failed, rc="); Serial.println(client.state());
       }
@@ -212,6 +221,13 @@ void maintainConnections() {
 void loop() {
   ArduinoOTA.handle();
   maintainConnections();
+
+  // 每日定時重啟，作為長期穩定運行的保險機制
+  if (millis() >= DAILY_REBOOT_INTERVAL_MS) {
+    Serial.println("Performing scheduled daily reboot...");
+    delay(100); // 等待序列埠訊息發送
+    ESP.restart();
+  }
 }
 
 unsigned long GetDistance() { 
@@ -220,88 +236,80 @@ unsigned long GetDistance() {
   digitalWrite(PIN_TRIG, HIGH); //啟動超音波
   delayMicroseconds(10);        //sustain at least 10us HIGH pulse
   digitalWrite(PIN_TRIG, LOW);  //關閉超音波
+  
+  // 增加 50000 微秒 (50毫秒) 的超時，對應約 8.6 公尺的距離
+  unsigned long duration = pulseIn(PIN_ECHO, HIGH, SENSOR_PULSEIN_TIMEOUT);
+  if (duration == 0) {
+    // Serial.println("Ultrasonic sensor timeout!");
+    return INVALID_DISTANCE; // 回傳一個無效值表示超時或無回波
+  }
 
-  unsigned long d = pulseIn(PIN_ECHO, HIGH) / 58.0; //計算傳回時間/58 = 距離
-  Serial.print(d);  
-  Serial.println("cm");
+  unsigned long d = duration / 58; // 使用整數除法，避免不必要的浮點數運算
   return d;
 }
 
-void DoorUp(){
-    Serial.println("UP Relay On");
-    digitalWrite(PIN_RELAY_1, RELAY_ON);
-    Serial.println("Delay(1000)");
-    delay(1000);
-    Serial.println("UP Relay Off");
-    digitalWrite(PIN_RELAY_1, RELAY_OFF);  
+void triggerRelay(int pin, const char* action) {
+    Serial.printf("%s Relay On\n", action);
+    digitalWrite(pin, RELAY_ON);
+    delay(1000); // 模擬按鈕按下的時間
+    digitalWrite(pin, RELAY_OFF);
+    Serial.printf("%s Relay Off\n", action);
 }
 
-void DoorStop(){
-    Serial.println("STOP Relay On");
-    digitalWrite(PIN_RELAY_2, RELAY_ON);
-    Serial.println("Delay(1000)");
-    delay(1000);
-    Serial.println("STOP Relay Off");
-    digitalWrite(PIN_RELAY_2, RELAY_OFF);
-}
-
-void DoorDown(){
-    Serial.println("DOWN Relay On");
-    digitalWrite(PIN_RELAY_3, RELAY_ON);
-    Serial.println("Delay(1000)");
-    delay(1000);
-    Serial.println("DOWN Relay Off");
-    digitalWrite(PIN_RELAY_3, RELAY_OFF);
+void triggerRelayTask(int pin, const char* action) {
+    Serial.printf("%s Relay On\n", action);
+    digitalWrite(pin, RELAY_ON);
+    vTaskDelay(pdMS_TO_TICKS(1000)); // 使用 vTaskDelay 避免阻塞 Task
+    digitalWrite(pin, RELAY_OFF);
+    Serial.printf("%s Relay Off\n", action);
 }
 
 /**
  * @brief 超音波感測任務 (優化版本)
  * 
- * 1. 持續偵測: 當物體進入感測範圍 (10-150cm) 並持續停留 2 秒後，觸發開門。
- * 2. 防止誤觸: 如果物體在 1 秒內離開，則重置計時。
- * 3. 冷卻機制: 觸發開門後，會進入 15 秒的冷卻期，防止重複觸發。
- * 4. 非阻塞: 完全使用 millis() 實現，不影響其他任務。
+ * 1. 持續偵測: 當物體進入感測範圍並持續停留指定時間後，觸發開門。
+ * 2. 防止誤觸: 如果物體在指定時間內離開，則重置計時。
+ * 3. 冷卻機制: 觸發開門後，會進入冷卻期，防止重複觸發。
+ * 4. 高效延遲: 使用動態計算的 vTaskDelay，在無事可做時讓 CPU 充分休息。
  */
 void Task_Sr04(void* parameter) {
-  // --- 設定值 ---
-  const unsigned long SENSE_INTERVAL_MS = 250;      // 每 250ms 偵測一次
-  const unsigned long TRIGGER_DURATION_MS = 1000;   // 需要持續偵測到 1 秒才觸發
-  const unsigned long COOLDOWN_DURATION_MS = 15000; // 觸發後冷卻 15 秒
-
   // --- 狀態變數 ---
-  unsigned long lastSenseTime = 0;
   unsigned long detectionStartTime = 0;
   unsigned long cooldownEndTime = 0;
   bool isDetecting = false;
 
   while (true) {
-    unsigned long currentTime = millis();
+    unsigned long currentTime = millis();    
+    unsigned long delayTimeMs = SENSOR_SENSE_INTERVAL_MS; // 預設的偵測間隔
 
-    // 檢查是否在冷卻期
-    if (currentTime < cooldownEndTime) {
-      vTaskDelay(pdMS_TO_TICKS(1000)); // 在冷卻期中，每秒檢查一次即可
-      continue;
-    }
-
-    // 每隔 SENSE_INTERVAL_MS 進行一次偵測
-    if (currentTime - lastSenseTime >= SENSE_INTERVAL_MS) {
-      lastSenseTime = currentTime;
+    // 只有在非冷卻期才執行感測邏輯
+    if (currentTime >= cooldownEndTime) {
       unsigned long d = GetDistance();
 
-      if (d >= 10 && d <= 150) { // 物體在範圍內
-        if (!isDetecting) { // 如果是首次偵測到
+      if (d != INVALID_DISTANCE && d >= SENSOR_TRIG_DISTANCE_MIN && d <= SENSOR_TRIG_DISTANCE_MAX) {
+        // 物體在範圍內
+        if (!isDetecting) {
+          // 首次偵測到，開始計時
           isDetecting = true;
-          detectionStartTime = currentTime; // 開始計時
-        } else if (currentTime - detectionStartTime >= TRIGGER_DURATION_MS) { // 如果已持續偵測超過設定時間
-          DoorUp();
-          cooldownEndTime = currentTime + COOLDOWN_DURATION_MS; // 進入冷卻期
+          detectionStartTime = currentTime;
+        } else if (currentTime - detectionStartTime >= SENSOR_TRIGGER_DURATION_MS) {
+          // 持續偵測時間達標，觸發開門
+          triggerRelayTask(PIN_RELAY_1, "UP (Sensor)");
+          cooldownEndTime = currentTime + SENSOR_COOLDOWN_DURATION_MS; // 進入冷卻期
+          // 觸發後，直接將本次延遲時間設為完整的冷卻時間
+          delayTimeMs = SENSOR_COOLDOWN_DURATION_MS;
           isDetecting = false; // 重置偵測狀態
         }
-      } else { // 物體不在範圍內
-        isDetecting = false; // 重置偵測狀態
+      } else {
+        // 物體已離開範圍，重置偵測狀態
+        isDetecting = false;
       }
+    } else {
+      // 當前仍在冷卻期，計算剩餘的冷卻時間作為本次的延遲時間
+      delayTimeMs = cooldownEndTime - currentTime;
     }
 
-    vTaskDelay(pdMS_TO_TICKS(50)); // 短暫釋放CPU資源給其他任務
+    // 根據計算出的時間進行延遲，讓出 CPU
+    vTaskDelay(pdMS_TO_TICKS(delayTimeMs));
   }
 }
