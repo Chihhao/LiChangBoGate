@@ -141,6 +141,21 @@ p {
     border-color: var(--secondary-hover);
 }
 
+/* --- DEBUG 登入按鈕 --- */
+.btn-debug-login {
+    margin-top: 15px;
+    background-color: #fef2f2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+.btn-debug-login:hover {
+    background-color: #fee2e2;
+    border-color: #fca5a5;
+    color: #991b1b;
+    transform: translateY(-1px); /* 保持與其他按鈕一致的 hover 效果 */
+}
+
+
 /* --- 按鈕焦點效果 --- */
 .btn:focus-visible {
     outline: 2px solid var(--primary-color);

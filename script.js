@@ -10,6 +10,7 @@ const controlView = document.getElementById('control-view');
 const systemMessage = document.getElementById('system-message');
 
 const loginButton = document.getElementById('login-button');
+const debugLoginButton = document.getElementById('debug-login-button');
 const logoutButton = document.getElementById('logout-button');
 
 const upButton = document.getElementById('up-button');
@@ -22,6 +23,7 @@ let currentUser = null;
 
 // --- 事件監聽 ---
 loginButton.addEventListener('click', handleGoogleLogin);
+debugLoginButton.addEventListener('click', handleDebugLogin);
 logoutButton.addEventListener('click', handleLogout); 
 
 upButton.addEventListener('click', () => controlDoor('up'));
@@ -44,6 +46,27 @@ async function handleGoogleLogin() {
         console.error('Google 登入失敗:', error);
         updateSystemMessage('登入時發生錯誤，請稍後再試。', 'danger');
     }
+}
+
+/**
+ * @description 處理 DEBUG 快速登入
+ */
+function handleDebugLogin() {
+    // 1. 模擬一個使用者物件
+    const debugUser = {
+        email: 'debug@example.com',
+        user_metadata: { full_name: 'DEBUG User' },
+        isDebug: true // 加入一個標記，表示這是 DEBUG 使用者
+    };
+    currentUser = debugUser;
+
+    // 2. 直接模擬登入成功的 UI 流程，繞過 onLoginSuccess 的資料庫檢查
+    loginView.classList.add('hidden');
+    controlView.classList.remove('hidden');
+
+    // 3. 顯示歡迎訊息
+    const fallbackName = currentUser.user_metadata.full_name || currentUser.email;
+    updateSystemMessage(`你好, ${fallbackName}`, 'info');
 }
 
 /**
@@ -78,6 +101,14 @@ async function handleLogout() {
 async function controlDoor(command) {
     if (!currentUser) {
         updateSystemMessage('錯誤：請先登入！', 'danger');
+        return;
+    }
+
+    // 如果是 DEBUG 模式，直接模擬成功，不呼叫後端
+    if (currentUser.isDebug) {
+        setControlsDisabled(true);
+        updateSystemMessage(`[DEBUG] 模擬指令 [${command.toUpperCase()}] 發送成功！`, 'success');
+        setTimeout(() => setControlsDisabled(false), 500); // 模擬延遲後恢復按鈕
         return;
     }
  
