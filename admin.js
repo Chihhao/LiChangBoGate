@@ -362,7 +362,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.closest('#logout-button') || e.target.closest('#logout-button-denied')) {
             (async () => {
                 try {
-                    const { error } = await supabaseClient.auth.signOut();
+                    // 加上 { scope: 'local' } 可以避免在 session 已經失效時，
+                    // 呼叫 server 端 logout API 產生 403 錯誤。
+                    const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
                     if (error) throw error;
                     // 登出成功後才重新整理頁面，確保 session 已清除
                     window.location.reload();

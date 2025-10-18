@@ -92,7 +92,9 @@ function handleDebugLogin() {
 async function handleLogout() {
     // 登出按鈕通常不需要禁用，因為 onAuthStateChange 會處理 UI 切換
     try {
-        const { error } = await supabaseClient.auth.signOut();
+        // 加上 { scope: 'local' } 可以避免在 session 已經失效時，
+        // 呼叫 server 端 logout API 產生 403 錯誤。
+        const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
         if (error) {
             throw error;
         }
