@@ -364,18 +364,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 登出
         if (e.target.closest('#logout-button') || e.target.closest('#logout-button-denied')) {
-            // 增加保護：如果本地已是登出狀態，直接重整頁面。
-            if (!currentUser) {
-                window.location.reload();
-            } else {
-                // 正常執行登出。onAuthStateChange 會監聽並重整頁面。
-                // 使用 { scope: 'local' } 強制清除本地 session，避免因 session 過期導致 403 錯誤。
-                const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
-                if (error) {
-                    console.error('登出時發生錯誤:', error);
-                    window.location.reload(); // 即使出錯也嘗試重整
-                } // 成功登出後 onAuthStateChange 會處理重整
+            const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
+            if (error) {
+                console.error('登出時發生錯誤:', error);
             }
+            // 無論 signOut 是否成功，都強制重整頁面以回到登入狀態。
+            window.location.reload();
         }
         
         // 新增按鈕

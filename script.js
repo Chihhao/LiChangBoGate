@@ -93,26 +93,18 @@ function handleDebugLogin() {
  * @description 處理登出邏輯
  */
 async function handleLogout() {
-    // 增加一層保護：如果因 session 過期等原因，本地已經是登出狀態，
-    // 就直接更新 UI，避免呼叫 signOut 產生不必要的錯誤。
-    if (!currentUser) {
-        console.log('Session not found, updating UI directly.');
-        updateUI();
-        return;
-    }
-
-    // 如果 session 存在，則正常執行登出。
-    // onAuthStateChange 會監聽到登出事件並自動處理 UI 更新。
-    // 使用 { scope: 'local' } 強制清除本地 session，避免因 session 過期導致 403 錯誤。
-    // 這會確保無論伺服器端 session 是否有效，都能成功清除本地登入狀態並更新 UI。
+    // 即使 session 已過期，也要嘗試呼叫 signOut 來觸發 onAuthStateChange 並清除本地儲存。
+    // { scope: 'local' } 會嘗試只清除本地 session，避免因 JWT 過期向伺服器請求而被拒絕。
     const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
+ 
     if (error) {
-        // 即使 signOut 失敗（雖然在 local scope 下很少見），
-        // 也要手動更新 UI 以確保使用者介面回到登入畫面。
         console.error('登出時發生錯誤:', error);
-        currentUser = null; // 清除本地使用者狀態
-        updateUI(); // 強制更新 UI
     }
+ 
+    // 無論 signOut 是否成功，都手動清除 currentUser 並更新 UI。
+    // 這是最關鍵的一步，確保即使 signOut 因 session 失效而出錯，UI 也能正確回到登入畫面。
+    currentUser = null;
+    updateUI();
 }
 
 
@@ -286,10 +278,9 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     } 
     // 當使用者登出時 (SIGNED_OUT)
     else if (event === 'SIGNED_OUT') {
-        // 當 signOut({ scope: 'local' }) 被呼叫時，此事件會被觸發。
-        // 我們將在這裡統一處理登出後的 UI 更新。
-        currentUser = null; // 清除當前使用者狀態
-        updateUI(); // 更新 UI 至登入畫面
+        // 此事件在 signOut 成功時觸發。
+        // 我們的 handleLogout 函式已經處理了 UI 更新，這裡僅作日誌記錄。
+        // 這樣可以避免在 handleLogout 中重複執行 UI 更新。
         console.log('User signed out, UI updated.');
     }
 });
