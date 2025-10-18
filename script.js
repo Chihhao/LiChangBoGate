@@ -103,9 +103,14 @@ async function handleLogout() {
 
     // 如果 session 存在，則正常執行登出。
     // onAuthStateChange 會監聽到登出事件並自動處理 UI 更新。
-    const { error } = await supabaseClient.auth.signOut();
-    // 登出時的 AuthSessionMissingError 可以安全地忽略，因為 onAuthStateChange 會處理好 UI。
-    if (error && error.name !== 'AuthSessionMissingError') console.error('登出時發生錯誤:', error);
+    // 使用 { scope: 'local' } 可以確保無論伺服器端 session 是否過期，
+    // 都能成功清除本地端的 session，從而避免 403 Forbidden 錯誤並正確更新 UI。
+    const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
+    if (error) {
+        // 即使本地登出也失敗，也要手動更新 UI 以防萬一
+        console.error('登出時發生錯誤:', error);
+        updateUI();
+    }
 }
 
 

@@ -369,8 +369,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.reload();
             } else {
                 // 正常執行登出，onAuthStateChange 會監聽並重整頁面。
-                const { error } = await supabaseClient.auth.signOut();
-                if (error && error.name !== 'AuthSessionMissingError') console.error('登出時發生錯誤:', error);
+                // 使用 { scope: 'local' } 強制清除本地 session，避免 403 錯誤。
+                const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
+                if (error) {
+                    console.error('登出時發生錯誤:', error);
+                }
             }
         }
         
