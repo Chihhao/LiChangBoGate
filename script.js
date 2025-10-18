@@ -87,24 +87,12 @@ function handleDebugLogin() {
 
 /**
  * @description 處理登出邏輯
- * TO-DO: 登出成功後，由 onAuthStateChange 自動處理 UI 更新
  */
 async function handleLogout() {
-    // 登出按鈕通常不需要禁用，因為 onAuthStateChange 會處理 UI 切換
-    try {
-        // 加上 { scope: 'local' } 可以避免在 session 已經失效時，
-        // 呼叫 server 端 logout API 產生 403 錯誤。
-        const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
-        if (error) {
-            throw error;
-        }
-        // 登出成功後，onAuthStateChange 事件會自動觸發，
-        // 並由它來處理 currentUser = null 和 updateUI()。
-        // 因此這裡不需要手動呼叫。
-    } catch (error) {
-        console.error('登出失敗:', error);
-        updateSystemMessage(`登出時發生錯誤: ${error.message}`, 'danger');
-    }
+    // 僅清除本地 session，避免因 session 失效導致 API 報錯。
+    // onAuthStateChange 會監聽到登出事件並自動處理 UI 更新。
+    const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
+    if (error) console.error('登出時發生錯誤:', error);
 }
 
 
@@ -279,8 +267,12 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     // 當使用者登出時 (SIGNED_OUT)
     else if (event === 'SIGNED_OUT') {
         currentUser = null;
-        updateUI();
-        setControlsDisabled(false); // 確保登出後按鈕是可用的 (雖然 view 已隱藏)
+        // 如果是管理頁面，直接重整
+        if (window.location.pathname.includes('admin.html')) {
+            window.location.reload();
+        } else {
+            updateUI();
+        }
     }
 });
 

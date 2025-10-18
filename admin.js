@@ -360,19 +360,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 登出
         if (e.target.closest('#logout-button') || e.target.closest('#logout-button-denied')) {
-            (async () => {
-                try {
-                    // 加上 { scope: 'local' } 可以避免在 session 已經失效時，
-                    // 呼叫 server 端 logout API 產生 403 錯誤。
-                    const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
-                    if (error) throw error;
-                    // 登出成功後才重新整理頁面，確保 session 已清除
-                    window.location.reload();
-                } catch (error) {
-                    console.error('登出失敗:', error);
-                    alert(`登出時發生錯誤: ${error.message}`);
-                }
-            })();
+            // 僅清除本地 session，避免因 session 失效導致 API 報錯。
+            // onAuthStateChange 會監聽到登出事件並自動重整頁面。
+            supabaseClient.auth.signOut({ scope: 'local' });
         }
         
         // 新增按鈕
