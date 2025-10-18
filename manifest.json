@@ -1,7 +1,7 @@
 {
-  "name": "里長伯鐵捲門遠端控制器",
-  "short_name": "里長伯鐵捲門",
-  "description": "里長伯鐵捲門遠端控制器",
+  "name": "里長伯社區遙控器",
+  "short_name": "里長伯遙控器",
+  "description": "里長伯社區遙控器",
   "start_url": "/index.html?source=pwa",
   "display": "standalone",
   "background_color": "#f9fafb",
