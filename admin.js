@@ -295,6 +295,16 @@ function closeModal() {
 
 // --- 事件綁定與初始化 ---
 document.addEventListener('DOMContentLoaded', () => {
+    // --- DEBUG 按鈕可見性控制 ---
+    const debugLoginButton = document.getElementById('debug-login-button');
+    if (debugLoginButton) {
+        const allowedDebugOrigins = ['http://127.0.0.1:5500', 'http://10.0.4.58:5500'];
+        const currentOrigin = window.location.origin;
+        if (!allowedDebugOrigins.includes(currentOrigin)) {
+            debugLoginButton.style.display = 'none';
+        }
+    }
+
     // 檢查初始 session
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
         if (session) {
