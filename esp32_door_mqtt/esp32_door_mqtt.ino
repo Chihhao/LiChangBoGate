@@ -1,8 +1,10 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include "credentials.h" // 引用包含密碼、Topic 等機密資訊的檔案
 #include <ESPmDNS.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
+#include <time.h>
 
 #define PIN_RELAY_1 16
 #define PIN_RELAY_2 17
@@ -12,12 +14,12 @@
 #define PIN_TRIG  33  //發出聲波腳位
 #define PIN_ECHO  32  //接收聲波腳位
 
-const char* ssid     = "*****";
-const char* password = "*****";
+// NTP 伺服器與時區設定 (台灣為 GMT+8)
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 8 * 3600;
+const int   daylightOffset_sec = 0;
 
-const char* mqttServer = "mqttgo.io";
-const int mqttPort = 1883;
-const char* TOPIC = "*****";
+// MQTT 訊息內容 (非機密)
 const char* MSG_UP = "DoorUp";
 const char* MSG_STOP = "DoorStop";
 const char* MSG_DOWN = "DoorDown";
@@ -46,16 +48,36 @@ void callback(char*topic, byte* payload, unsigned int length) {
   Serial.print(String("receive: ") + strTopic); 
   Serial.println(String(" | ") + strMsg); 
 
-  if(strTopic == String(TOPIC)){
-    if(strMsg == String(MSG_UP)) {
-      DoorUp();
+  // 處理新 Topic 的指令
+  if (strTopic == String(TOPIC)) {
+    processCommand(strMsg);
+    return;
+  }
+
+  // 處理舊 Topic 的指令，並加上日期檢查
+  if (strTopic == String(TOPIC_OLD)) {
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo)) {
+      Serial.println("無法取得時間，舊 Topic 指令被拒絕。");
+      return;
     }
-    else if(strMsg == String(MSG_STOP)) {
-      DoorStop();
+
+    // 檢查日期是否在 2025/10/31 之後
+    // tm_year 是從 1900 年起算, 所以 2025 年是 125
+    // tm_mon 是 0-11, 所以 10 月是 9
+    bool isExpired = false;
+    if (timeinfo.tm_year > 125) { // > 2025 年
+      isExpired = true;
+    } else if (timeinfo.tm_year == 125 && timeinfo.tm_mon > 9) { // 2025 年且 > 10 月
+      isExpired = true;
     }
-    else if(strMsg == String(MSG_DOWN)) {
-      DoorDown();
-    }  
+
+    if (isExpired) {
+      Serial.println("舊 Topic 已於 2025/10/31 後失效，指令被忽略。");
+      return;
+    }
+
+    processCommand(strMsg);
   }
 }
 
@@ -99,8 +121,20 @@ void checkMQTT(){
       delay(2000);
     }    
   }
+  // 訂閱兩個 Topic
   client.subscribe(TOPIC);
-  
+  client.subscribe(TOPIC_OLD);
+  Serial.print("Subscribed to topic: ");
+  Serial.println(TOPIC);
+  Serial.print("Subscribed to old topic: ");
+  Serial.println(TOPIC_OLD);
+}
+
+void processCommand(String msg) {
+  if (msg == String(MSG_UP))       DoorUp();
+  else if (msg == String(MSG_STOP)) DoorStop();
+  else if (msg == String(MSG_DOWN)) DoorDown();
+  else Serial.println("Unknown command received.");
 }
 
 void setup() {
@@ -120,6 +154,9 @@ void setup() {
   
   WiFi.begin(ssid,password);  
 
+  // 初始化NTP時間
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
   OTA_Begin();
 
   xTaskCreatePinnedToCore(Task_Sr04,"TaskSr04",2048,NULL,0,NULL,0); 
@@ -127,11 +164,11 @@ void setup() {
 }
 
 void OTA_Begin(){
-    // Hostname defaults to esp3232-[MAC]
-    ArduinoOTA.setHostname("esp32_Lizabo");
+    // 從 credentials.h 讀取主機名稱
+    ArduinoOTA.setHostname(ota_hostname);
   
-    // No authentication by default
-    ArduinoOTA.setPassword("1201");
+    // 從 credentials.h 讀取密碼
+    ArduinoOTA.setPassword(ota_password);
     
     ArduinoOTA
       .onStart([]() {
@@ -209,26 +246,54 @@ void DoorDown(){
     digitalWrite(PIN_RELAY_3, RELAY_OFF);
 }
 
-void Task_Sr04(void* parameter){  
-  unsigned long _startMillis = millis(); 
-  int _keepTime = 2000;
+/**
+ * @brief 超音波感測任務 (優化版本)
+ * 
+ * 1. 持續偵測: 當物體進入感測範圍 (10-150cm) 並持續停留 2 秒後，觸發開門。
+ * 2. 防止誤觸: 如果物體在 1 秒內離開，則重置計時。
+ * 3. 冷卻機制: 觸發開門後，會進入 15 秒的冷卻期，防止重複觸發。
+ * 4. 非阻塞: 完全使用 millis() 實現，不影響其他任務。
+ */
+void Task_Sr04(void* parameter) {
+  // --- 設定值 ---
+  const unsigned long SENSE_INTERVAL_MS = 250;      // 每 250ms 偵測一次
+  const unsigned long TRIGGER_DURATION_MS = 1000;   // 需要持續偵測到 1 秒才觸發
+  const unsigned long COOLDOWN_DURATION_MS = 15000; // 觸發後冷卻 15 秒
 
-  while(true){
-    unsigned long d = GetDistance(); 
-    // char _temp[10];
-    // sprintf(_temp,"%d\n", d);
-    // client.publish("ChihhaoTest", _temp);        
-    if(d >= 10 && d <= 150){        
-        //if(millis() - _startMillis >= _keepTime){    
-            DoorUp();    
-            delay(2000);  
-        //    _startMillis = millis(); 
-        //}     
+  // --- 狀態變數 ---
+  unsigned long lastSenseTime = 0;
+  unsigned long detectionStartTime = 0;
+  unsigned long cooldownEndTime = 0;
+  bool isDetecting = false;
+
+  while (true) {
+    unsigned long currentTime = millis();
+
+    // 檢查是否在冷卻期
+    if (currentTime < cooldownEndTime) {
+      vTaskDelay(pdMS_TO_TICKS(1000)); // 在冷卻期中，每秒檢查一次即可
+      continue;
     }
-    else{
-        //_startMillis = millis(); 
+
+    // 每隔 SENSE_INTERVAL_MS 進行一次偵測
+    if (currentTime - lastSenseTime >= SENSE_INTERVAL_MS) {
+      lastSenseTime = currentTime;
+      unsigned long d = GetDistance();
+
+      if (d >= 10 && d <= 150) { // 物體在範圍內
+        if (!isDetecting) { // 如果是首次偵測到
+          isDetecting = true;
+          detectionStartTime = currentTime; // 開始計時
+        } else if (currentTime - detectionStartTime >= TRIGGER_DURATION_MS) { // 如果已持續偵測超過設定時間
+          DoorUp();
+          cooldownEndTime = currentTime + COOLDOWN_DURATION_MS; // 進入冷卻期
+          isDetecting = false; // 重置偵測狀態
+        }
+      } else { // 物體不在範圍內
+        isDetecting = false; // 重置偵測狀態
+      }
     }
-    
-    delay(1000);
-  }    
+
+    vTaskDelay(pdMS_TO_TICKS(50)); // 短暫釋放CPU資源給其他任務
+  }
 }

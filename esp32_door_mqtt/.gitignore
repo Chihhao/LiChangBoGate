@@ -1,0 +1,4 @@
+# 忽略包含敏感資訊的憑證檔案
+credentials.h
+
+# 忽略 PlatformIO 專案的本地設定檔
