@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- 淺灰色圓角背景 -->
+  <rect width="24" height="24" rx="4" fill="#f9fafb"/>
+  <!-- 原本的車庫圖示 -->
+  <path fill="#4338ca" d="M19,20H17V11H7V20H5V9L12,5L19,9V20M8,12H16V14H8V12M8,15H16V17H8V15M16,18H8V20H16V18Z"/>
+</svg>

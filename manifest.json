@@ -1,0 +1,17 @@
+{
+  "name": "里長伯鐵捲門遠端控制器",
+  "short_name": "里長伯鐵捲門",
+  "description": "里長伯鐵捲門遠端控制器",
+  "start_url": "/index.html?source=pwa",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#374151",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

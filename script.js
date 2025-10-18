@@ -267,3 +267,51 @@ async function checkInitialSession() {
 }
 
 checkInitialSession();
+
+// --- PWA Service Worker 註冊 ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => console.log('Service Worker registered: ', registration))
+            .catch(registrationError => console.log('Service Worker registration failed: ', registrationError));
+    });
+}
+
+// --- 動態生成 Apple Touch Icon 解決 iOS 模糊問題 ---
+/**
+ * @description 透過 Canvas 將 SVG 轉換為高解析度 PNG Data URI，並設定為 apple-touch-icon。
+ * 這是為了解決 iOS 設備上「加入主畫面」時 SVG 圖示可能模糊的問題。
+ */
+function generateAppleTouchIcon() {
+    const iconUrl = 'icon.svg';
+    const iconSize = 512; // 設定高解析度尺寸
+
+    const canvas = document.createElement('canvas');
+    canvas.width = iconSize;
+    canvas.height = iconSize;
+    const ctx = canvas.getContext('2d');
+
+    const img = new Image();
+    img.onload = () => {
+        // 將 SVG 圖片繪製到 Canvas 上
+        ctx.drawImage(img, 0, 0, iconSize, iconSize);
+
+        // 從 Canvas 獲取 PNG 格式的 Data URI
+        const pngDataUrl = canvas.toDataURL('image/png');
+
+        // 創建 <link> 標籤
+        const link = document.createElement('link');
+        link.rel = 'apple-touch-icon';
+        link.href = pngDataUrl;
+
+        // 將 <link> 標籤添加到 <head>
+        document.head.appendChild(link);
+        console.log('Apple Touch Icon generated and applied.');
+    };
+    img.onerror = () => {
+        console.error('Failed to load icon.svg for generating Apple Touch Icon.');
+    };
+    img.src = iconUrl;
+}
+
+window.addEventListener('load', generateAppleTouchIcon);

@@ -1,0 +1,17 @@
+{
+  "name": "里長伯鐵捲門管理後台",
+  "short_name": "里長伯後台",
+  "description": "里長伯鐵捲門管理後台",
+  "start_url": "/admin.html?source=pwa",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#374151",
+  "icons": [
+    {
+      "src": "admin-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
