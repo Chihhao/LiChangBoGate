@@ -27,8 +27,9 @@ const char* MSG_DOWN = "DoorDown";
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-unsigned long previousMillis = 0;
-unsigned long interval = 30000;
+// 用於非阻塞式重連的計時器
+unsigned long wifiReconnectPrevMillis = 0;
+unsigned long mqttReconnectPrevMillis = 0;
 
 void callback(char*topic, byte* payload, unsigned int length) {  
   String strTopic = String((char*)topic);
@@ -79,55 +80,6 @@ void callback(char*topic, byte* payload, unsigned int length) {
 
     processCommand(strMsg);
   }
-}
-
-void checkWifi(){
-  if(WiFi.status()== WL_CONNECTED){ return; }
-
-  unsigned long currentMillis = millis();  
-  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
-    Serial.print(millis());
-    Serial.println("Reconnecting to WiFi...");
-    WiFi.disconnect();
-    WiFi.reconnect();
-    previousMillis = currentMillis;
-    if(WiFi.status()== WL_CONNECTED){
-        Serial.println("WiFi Connected");
-    }
-  }
-}
-
-void checkMQTT(){
-  if(client.connected()){
-    client.loop();
-    return;
-  }
-  digitalWrite(LED_BUILTIN, LOW);
-  client.disconnect();
-  delay(10);  
-  
-  client.setServer(mqttServer,mqttPort);    
-  client.setCallback(callback);
-  
-  while (!client.connected()){    
-    Serial.println("Connecting to MQTT..");
-    if (client.connect("ESP32_LiChangBoBuilding")) {    
-      Serial.println("MQTT Connected");
-      digitalWrite(LED_BUILTIN, HIGH);
-    }else {
-      Serial.print("MQTT Connect fail: state: ");
-      Serial.println(client.state());
-      digitalWrite(LED_BUILTIN, LOW);
-      delay(2000);
-    }    
-  }
-  // 訂閱兩個 Topic
-  client.subscribe(TOPIC);
-  client.subscribe(TOPIC_OLD);
-  Serial.print("Subscribed to topic: ");
-  Serial.println(TOPIC);
-  Serial.print("Subscribed to old topic: ");
-  Serial.println(TOPIC_OLD);
 }
 
 void processCommand(String msg) {
@@ -199,11 +151,67 @@ void OTA_Begin(){
     ArduinoOTA.begin();
 }
 
+/**
+ * @brief 維護 Wi-Fi 與 MQTT 的連線狀態 (非阻塞式)
+ * 
+ * 這個函式會被放在 loop() 中持續呼叫。
+ * 1. 檢查 Wi-Fi 連線，若斷線則每 30 秒嘗試重連一次。
+ * 2. 在 Wi-Fi 連線正常的前提下，檢查 MQTT 連線。
+ * 3. 若 MQTT 斷線，則每 5 秒嘗試重連一次。
+ * 4. 若 MQTT 連線正常，則執行 client.loop() 來處理傳入的訊息。
+ */
+void maintainConnections() {
+  unsigned long currentMillis = millis();
+
+  // --- 1. 維護 Wi-Fi 連線 ---
+  if (WiFi.status() != WL_CONNECTED) {
+    // 如果 Wi-Fi 斷線，MQTT 必定也無法連線，所以先處理 Wi-Fi
+    digitalWrite(LED_BUILTIN, LOW); // 熄滅 LED 燈號表示斷線
+    
+    // 每 30 秒嘗試重連一次
+    if (currentMillis - wifiReconnectPrevMillis >= 30000) {
+      Serial.println("Reconnecting to WiFi...");
+      WiFi.disconnect();
+      WiFi.reconnect();
+      wifiReconnectPrevMillis = currentMillis;
+    }
+    return; // Wi-Fi 沒連上，直接返回，不做後續 MQTT 檢查
+  }
+
+  // --- 2. 維護 MQTT 連線 ---
+  if (!client.connected()) {
+    digitalWrite(LED_BUILTIN, LOW); // 熄滅 LED 燈號表示斷線
+
+    // 每 5 秒嘗試重連一次
+    if (currentMillis - mqttReconnectPrevMillis >= 5000) {
+      Serial.println("Attempting MQTT connection...");
+      client.setServer(mqttServer, mqttPort);
+      client.setCallback(callback);
+      
+      if (client.connect("ESP32_LiChangBoBuilding")) {
+        Serial.println("MQTT Connected!");
+        digitalWrite(LED_BUILTIN, HIGH); // 點亮 LED
+        // 連線成功後，重新訂閱主題
+        client.subscribe(TOPIC);
+        client.subscribe(TOPIC_OLD);
+        Serial.print("Subscribed to: "); Serial.println(TOPIC);
+        Serial.print("Subscribed to old: "); Serial.println(TOPIC_OLD);
+      } else {
+        Serial.print("MQTT connect failed, rc="); Serial.println(client.state());
+      }
+      mqttReconnectPrevMillis = currentMillis;
+    }
+    return; // 本次 MQTT 連線嘗試結束，無論成功失敗都返回
+  }
+
+  // --- 3. 處理 MQTT 訊息 ---
+  // 如果 Wi-Fi 和 MQTT 都已連線，則正常處理 MQTT 訊息
+  client.loop();
+}
+
 void loop() {
   ArduinoOTA.handle();
-  checkWifi();
-  checkMQTT();   
-  client.loop();  
+  maintainConnections();
 }
 
 unsigned long GetDistance() { 
