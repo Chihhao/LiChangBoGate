@@ -155,6 +155,73 @@ p {
     transform: translateY(-1px); /* 保持與其他按鈕一致的 hover 效果 */
 }
 
+/* --- 安裝說明連結 --- */
+.install-guide-link {
+    display: block;
+    margin-top: 25px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-decoration: none;
+}
+.install-guide-link:hover {
+    text-decoration: underline;
+    color: var(--text-primary);
+}
+
+/* --- 彈出式視窗 (Modal) --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 15px;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    padding: 25px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: var(--shadow-lg);
+    text-align: left;
+}
+
+.modal-title {
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.install-instructions .platform-guide {
+    margin-bottom: 20px;
+}
+.install-instructions h3 {
+    font-size: 18px;
+    margin-top: 0;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.install-instructions p,
+.install-instructions ol {
+    font-size: 15px;
+    color: var(--text-secondary);
+    padding-left: 20px;
+    margin-top: 0;
+}
+
+.modal-actions {
+    margin-top: 20px;
+}
+
 
 /* --- 按鈕焦點效果 --- */
 .btn:focus-visible {

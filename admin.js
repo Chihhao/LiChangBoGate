@@ -10,6 +10,9 @@ const loginView = document.getElementById('login-view');
 const adminView = document.getElementById('admin-view');
 const permissionDeniedView = document.getElementById('permission-denied-view');
 const userModal = document.getElementById('user-modal');
+const installGuideLink = document.getElementById('install-guide-link');
+const installGuideModal = document.getElementById('install-guide-modal');
+const closeGuideBtn = document.getElementById('close-guide-btn');
 
 let currentUser = null;
 let whitelistCache = []; // 用於儲存白名單資料，實現即時搜尋
@@ -311,6 +314,17 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.reload();
         }
     });
+
+    // 安裝說明 Modal 的事件監聽
+    if (installGuideLink) {
+        installGuideLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            installGuideModal.classList.remove('hidden');
+        });
+    }
+    if (closeGuideBtn) {
+        closeGuideBtn.addEventListener('click', () => installGuideModal.classList.add('hidden'));
+    }
 
     // --- 全域點擊事件委派 ---
     document.body.addEventListener('click', (e) => {

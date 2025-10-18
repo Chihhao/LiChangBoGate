@@ -40,6 +40,8 @@
                 DEBUG 快速登入
             </button>
 
+            <a href="#" id="install-guide-link" class="install-guide-link">如何安裝 App？</a>
+
         </div>
 
         <!-- 控制區塊 -->
@@ -79,6 +81,34 @@
 
         </div>
 
+    </div>
+
+    <!-- 安裝說明 Modal -->
+    <div id="install-guide-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="modal-title">如何安裝應用程式</h2>
+            <div class="install-instructions">
+                <div class="platform-guide">
+                    <h3><i class="mdi mdi-android"></i> Android 手機</h3>
+                    <p>請依照以下步驟將 App 加到您的主畫面：</p>
+                    <ol>
+                        <li>點擊瀏覽器右上角的「<i class="mdi mdi-dots-vertical"></i>」選單。</li>
+                        <li>選擇「<strong>安裝應用程式</strong>」或「<strong>新增至主畫面</strong>」。</li>
+                    </ol>
+                </div>
+                <div class="platform-guide">
+                    <h3><i class="mdi mdi-apple-ios"></i> iPhone / iPad</h3>
+                    <p>請依照以下步驟將 App 加到您的主畫面：</p>
+                    <ol>
+                        <li>點擊瀏覽器下方的「<i class="mdi mdi-export-variant"></i>」(分享) 按鈕。</li>
+                        <li>在選單中向下滑動，選擇「<strong>加入主畫面</strong>」。</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="close-guide-btn" class="btn">關閉</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

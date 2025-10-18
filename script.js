@@ -12,6 +12,10 @@ const systemMessage = document.getElementById('system-message');
 const loginButton = document.getElementById('login-button');
 const debugLoginButton = document.getElementById('debug-login-button');
 const logoutButton = document.getElementById('logout-button');
+const installGuideLink = document.getElementById('install-guide-link');
+const installGuideModal = document.getElementById('install-guide-modal');
+const closeGuideBtn = document.getElementById('close-guide-btn');
+
 
 const upButton = document.getElementById('up-button');
 const stopButton = document.getElementById('stop-button');
@@ -25,6 +29,18 @@ let currentUser = null;
 loginButton.addEventListener('click', handleGoogleLogin);
 debugLoginButton.addEventListener('click', handleDebugLogin);
 logoutButton.addEventListener('click', handleLogout); 
+
+// 安裝說明 Modal 的事件監聽
+if (installGuideLink) {
+    installGuideLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        installGuideModal.classList.remove('hidden');
+    });
+}
+if (closeGuideBtn) {
+    closeGuideBtn.addEventListener('click', () => installGuideModal.classList.add('hidden'));
+}
+
 
 upButton.addEventListener('click', () => controlDoor('up'));
 stopButton.addEventListener('click', () => controlDoor('stop'));
@@ -178,18 +194,19 @@ async function onLoginSuccess(user) {
         loginView.classList.remove('hidden');
         controlView.classList.add('hidden');
 
-        // 2. 在登入頁面的提示框中，顯示明確的錯誤訊息
-        const noticeElement = loginView.querySelector('.info-notice');
-        if (noticeElement) {
-            // 改變提示框的樣式，使其看起來像一個錯誤警告
-            noticeElement.style.backgroundColor = '#fef2f2'; // 淡紅色背景
-            noticeElement.style.color = '#991b1b';           // 深紅色文字
-            
-            // 更新圖示與文字
-            noticeElement.innerHTML = `
+        // 2. 在登入按鈕前動態插入一個權限錯誤的提示框
+        // 避免直接修改現有的 .info-notice，以防與 iOS 提示衝突
+        const existingErrorPrompt = document.getElementById('permission-error-prompt');
+        if (!existingErrorPrompt) {
+            const errorPrompt = document.createElement('div');
+            errorPrompt.id = 'permission-error-prompt';
+            errorPrompt.className = 'warning-notice'; // 使用紅色系的警告樣式
+            errorPrompt.innerHTML = `
                 <i class="mdi mdi-alert-circle-outline"></i>
                 <span>您沒有權限！請向管委會申請使用。</span>
             `;
+            // 將錯誤提示插入到登入按鈕的前面
+            loginView.insertBefore(errorPrompt, loginButton);
         }
     }
 }
@@ -268,12 +285,39 @@ async function checkInitialSession() {
 
 checkInitialSession();
 
-// --- PWA Service Worker 註冊 ---
+// --- iOS 安裝提示邏輯 ---
+/**
+ * 偵測是否為 iOS 裝置且尚未安裝 PWA，若是，則顯示安裝提示。
+ */
+function showIosInstallPrompt() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+
+    if (isIOS && !isInStandaloneMode) {
+        const noticeElement = loginView.querySelector('.info-notice');
+        if (noticeElement) {
+            // 複製一個提示框專門給 iOS 用，避免覆蓋掉原本的權限提示
+            const iosPrompt = noticeElement.cloneNode(true);
+            iosPrompt.id = 'ios-install-prompt';
+            iosPrompt.innerHTML = `
+                <i class="mdi mdi-apple-ios"></i>
+                <span>iPhone 用戶可點擊下方「分享」按鈕，並選擇「加入主畫面」以獲得最佳體驗。</span>
+            `;
+            loginView.insertBefore(iosPrompt, loginButton);
+        }
+    }
+}
+
+// --- PWA 相關邏輯 ---
+// 註冊 Service Worker 是 PWA 的核心之一，即使沒有安裝按鈕也需要保留
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
             .then(registration => console.log('Service Worker registered: ', registration))
             .catch(registrationError => console.log('Service Worker registration failed: ', registrationError));
+        
+        // 頁面載入後，檢查是否要顯示 iOS 提示
+        showIosInstallPrompt();
     });
 }
 
