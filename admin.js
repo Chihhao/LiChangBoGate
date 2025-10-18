@@ -368,12 +368,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!currentUser) {
                 window.location.reload();
             } else {
-                // 正常執行登出，onAuthStateChange 會監聽並重整頁面。
-                // 使用 { scope: 'local' } 強制清除本地 session，避免 403 錯誤。
+                // 正常執行登出。onAuthStateChange 會監聽並重整頁面。
+                // 使用 { scope: 'local' } 強制清除本地 session，避免因 session 過期導致 403 錯誤。
                 const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
                 if (error) {
                     console.error('登出時發生錯誤:', error);
-                }
+                    window.location.reload(); // 即使出錯也嘗試重整
+                } // 成功登出後 onAuthStateChange 會處理重整
             }
         }
         

@@ -103,13 +103,15 @@ async function handleLogout() {
 
     // 如果 session 存在，則正常執行登出。
     // onAuthStateChange 會監聽到登出事件並自動處理 UI 更新。
-    // 使用 { scope: 'local' } 可以確保無論伺服器端 session 是否過期，
-    // 都能成功清除本地端的 session，從而避免 403 Forbidden 錯誤並正確更新 UI。
+    // 使用 { scope: 'local' } 強制清除本地 session，避免因 session 過期導致 403 錯誤。
+    // 這會確保無論伺服器端 session 是否有效，都能成功清除本地登入狀態並更新 UI。
     const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
     if (error) {
-        // 即使本地登出也失敗，也要手動更新 UI 以防萬一
+        // 即使 signOut 失敗（雖然在 local scope 下很少見），
+        // 也要手動更新 UI 以確保使用者介面回到登入畫面。
         console.error('登出時發生錯誤:', error);
-        updateUI();
+        currentUser = null; // 清除本地使用者狀態
+        updateUI(); // 強制更新 UI
     }
 }
 
@@ -284,13 +286,11 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     } 
     // 當使用者登出時 (SIGNED_OUT)
     else if (event === 'SIGNED_OUT') {
-        currentUser = null;
-        // 如果是管理頁面，直接重整
-        if (window.location.pathname.includes('admin.html')) {
-            window.location.reload();
-        } else {
-            updateUI();
-        }
+        // 當 signOut({ scope: 'local' }) 被呼叫時，此事件會被觸發。
+        // 我們將在這裡統一處理登出後的 UI 更新。
+        currentUser = null; // 清除當前使用者狀態
+        updateUI(); // 更新 UI 至登入畫面
+        console.log('User signed out, UI updated.');
     }
 });
 
