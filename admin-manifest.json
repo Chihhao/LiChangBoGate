@@ -1,7 +1,7 @@
 {
     "name": "里長伯遙控器管理後台",
     "short_name": "里長伯後台",
-    "start_url": ".",
+    "start_url": "admin.html",
     "scope": ".",
     "display": "standalone",
     "background_color": "#374151",
