@@ -336,7 +336,7 @@ function showIosInstallPrompt() {
 // 註冊 Service Worker 是 PWA 的核心之一，即使沒有安裝按鈕也需要保留
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('sw.js')
             .then(registration => console.log('Service Worker registered: ', registration))
             .catch(registrationError => console.log('Service Worker registration failed: ', registrationError));
         

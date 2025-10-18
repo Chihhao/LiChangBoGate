@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 全域點擊事件委派 ---
-    document.body.addEventListener('click', (e) => {
+    document.body.addEventListener('click', async (e) => {
         // Google 登入
         if (e.target.closest('#login-button')) {
             supabaseClient.auth.signInWithOAuth({
@@ -407,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         // 我們可以共用同一個 sw.js 檔案
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('sw.js')
             .then(registration => console.log('Admin Service Worker registered: ', registration))
             .catch(registrationError => console.log('Admin Service Worker registration failed: ', registrationError));
     });
