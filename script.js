@@ -113,12 +113,24 @@ async function handleLogout() {
  * @param {string} command - 指令 ('up', 'stop', 'down')
  */
 async function controlDoor(command) {
-    if (!currentUser) {
-        updateSystemMessage('錯誤：請先登入！', 'danger');
+    // 1. 每次操作前都先刷新並驗證 Session，這是最穩健的做法
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+
+    // 如果 session 刷新失敗或不存在，代表登入狀態已失效
+    if (sessionError || !session) {
+        updateSystemMessage('登入已逾期，請重新登入。', 'danger');
+        console.error('Session invalid, forcing logout.');
+        // 可以在此處強制觸發登出流程，確保 UI 一致性
+        await supabaseClient.auth.signOut({ scope: 'local' });
         return;
     }
 
-    // 如果是 DEBUG 模式，直接模擬成功，不呼叫後端
+    // 更新當前的 currentUser，以防萬一
+    currentUser = session.user;
+
+    // 2. 如果是 DEBUG 模式，直接模擬成功，不呼叫後端
+    // 注意：getSession 刷新機制對 DEBUG 模式無效，因為它沒有真的 session
+    // 但我們保留這個邏輯用於開發測試
     if (currentUser.isDebug) {
         setControlsDisabled(true);
         updateSystemMessage(`[DEBUG] 模擬指令 [${command.toUpperCase()}] 發送成功！`, 'success');
@@ -126,6 +138,7 @@ async function controlDoor(command) {
         return;
     }
  
+    // 3. 執行實際的指令發送
     setControlsDisabled(true);
     updateSystemMessage(`指令發送中: [${command.toUpperCase()}]...`, 'info');
  
