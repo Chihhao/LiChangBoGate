@@ -13,3 +13,6 @@
 
 # Node.js
 /node_modules
+
+# Sensitive credentials
+esp32_door_mqtt/credentials.h
