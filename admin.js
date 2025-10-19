@@ -16,6 +16,7 @@ const closeGuideBtn = document.getElementById('close-guide-btn');
 
 let currentUser = null;
 let whitelistCache = []; // 用於儲存白名單資料，實現即時搜尋
+let sortState = { column: null, ascending: true }; // 用於追蹤排序狀態
 
 // --- 核心函式 ---
 
@@ -218,11 +219,11 @@ function showAdminView() {
         <div class="table-container">
             <table class="user-table">
                 <thead>
-                    <tr>
-						<th>住戶</th>
-                        <th>Google 帳號</th>						
-                        <th>操作</th>
-                    </tr>
+                     <tr>
+						<th data-sort-key="resident_id" style="cursor: pointer;">住戶 <i class="mdi mdi-swap-vertical"></i></th>
+                        <th data-sort-key="email" style="cursor: pointer;">Google 帳號 <i class="mdi mdi-swap-vertical"></i></th>
+                        <th style="cursor: default;">操作</th>
+                     </tr>
                 </thead>
                 <tbody id="user-table-body">
                     <tr><td colspan="3" style="text-align: center;">載入中...</td></tr>
@@ -240,6 +241,52 @@ function showAdminView() {
             (user.resident_id && user.resident_id.toLowerCase().includes(searchTerm))
         );
         renderTable(filteredData);
+    });
+
+    // 為表頭加上排序事件監聽
+    adminView.querySelectorAll('th[data-sort-key]').forEach(th => {
+        th.addEventListener('click', () => {
+            const sortKey = th.dataset.sortKey;
+            
+            // 更新排序狀態
+            if (sortState.column === sortKey) {
+                sortState.ascending = !sortState.ascending; // 切換排序方向
+            } else {
+                sortState.column = sortKey;
+                sortState.ascending = true; // 預設為升序
+            }
+
+            // 執行排序
+            whitelistCache.sort((a, b) => {
+                const valA = a[sortKey] || '';
+                const valB = b[sortKey] || '';
+                
+                if (valA < valB) {
+                    return sortState.ascending ? -1 : 1;
+                }
+                if (valA > valB) {
+                    return sortState.ascending ? 1 : -1;
+                }
+                return 0;
+            });
+
+            renderTable(whitelistCache); // 重新渲染表格內容
+
+            // 更新表頭的排序圖示
+            adminView.querySelectorAll('th[data-sort-key]').forEach(header => {
+                const icon = header.querySelector('i');
+                if (header.dataset.sortKey === sortKey) {
+                    // 當前排序的欄位
+                    icon.className = sortState.ascending 
+                        ? 'mdi mdi-sort-ascending' 
+                        : 'mdi mdi-sort-descending';
+                } else {
+                    // 其他未排序的欄位
+                    icon.className = 'mdi mdi-swap-vertical';
+                }
+            });
+
+        });
     });
 }
 
