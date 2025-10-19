@@ -26,6 +26,7 @@ async function logAction(
   adminClient: any,
   userId: string,
   userEmail: string,
+  residentId: string | null, // 新增 residentId 參數
   command: string,
   status: "success" | "failure",
   details: string
@@ -34,6 +35,7 @@ async function logAction(
     const { error: logError } = await adminClient.from("logs").insert({
       user_id: userId,
       user_email: userEmail,
+      resident_id: residentId, // 將 resident_id 存入資料庫
       command: command,
       status: status,
       details: details,
@@ -54,6 +56,7 @@ Deno.serve(async (req: Request) => {
     // 提前從請求中解析 body，以便在發生錯誤時也能記錄
     const body = await req.json();
     const { command } = body;
+    let residentId: string | null = null; // 在 try 區塊外部宣告 residentId
     let user: any = null; // 在 try 區塊外部宣告 user
 
     // 1. 建立一個模擬使用者的 client，專門用來驗證 JWT 並取得使用者資訊
@@ -72,7 +75,7 @@ Deno.serve(async (req: Request) => {
       const errorMsg = "無效的認證或未登入";
       // 即使驗證失敗，也嘗試記錄（如果能解析出 command 的話）
       // 注意：此時 user 為 null，所以 user_id 和 user_email 會是 null
-      await logAction(createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!), null, "unknown", command || "unknown", "failure", errorMsg);
+      await logAction(createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!), null, "unknown", null, command || "unknown", "failure", errorMsg);
       return createJsonResponse({ error: errorMsg }, 401);
     }
 
@@ -85,14 +88,14 @@ Deno.serve(async (req: Request) => {
     // 3. Check if user's email is in the whitelist
     const { data: whitelistEntry, error: whitelistError } = await adminClient
       .from("whitelist")
-      .select("email")
+      .select("email, resident_id") // 同時查詢 email 和 resident_id
       .eq("email", user.email)
       .single();
 
     if (whitelistError || !whitelistEntry) {
       const errorMsg = "權限不足，您的帳號未在白名單中";
       console.error(`Whitelist check failed for ${user.email}:`, whitelistError?.message || "Not in whitelist");
-      await logAction(adminClient, user.id, user.email, command, "failure", errorMsg);
+      await logAction(adminClient, user.id, user.email, null, command, "failure", errorMsg);
       return createJsonResponse({ error: errorMsg }, 403);
     }
 
@@ -125,7 +128,7 @@ Deno.serve(async (req: Request) => {
           if (err) {
             console.error("MQTT publish error:", err);
             mqttClient.end();
-            logAction(adminClient, user.id, user.email, command, "failure", `發布 MQTT 指令失敗: ${err.message}`);
+            logAction(adminClient, user.id, user.email, whitelistEntry.resident_id, command, "failure", `發布 MQTT 指令失敗: ${err.message}`);
             reject(new Error("發布 MQTT 指令失敗"));
             return;
           }
@@ -138,14 +141,14 @@ Deno.serve(async (req: Request) => {
       mqttClient.on('error', (err) => {
         console.error("MQTT connection error:", err);
         mqttClient.end();
-        logAction(adminClient, user.id, user.email, command, "failure", `無法連接至 MQTT 伺服器: ${err.message}`);
+        logAction(adminClient, user.id, user.email, whitelistEntry.resident_id, command, "failure", `無法連接至 MQTT 伺服器: ${err.message}`);
         reject(new Error("無法連接至 MQTT 伺服器"));
       });
     });
 
     // 7. Return success response
     const successMsg = `指令 [${command.toUpperCase()}] 已成功發送！`;
-    await logAction(adminClient, user.id, user.email, command, "success", successMsg);
+    await logAction(adminClient, user.id, user.email, whitelistEntry.resident_id, command, "success", successMsg);
     return createJsonResponse({ message: successMsg }, 200);
 
   } catch (error) {
