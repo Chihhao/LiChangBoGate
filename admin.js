@@ -11,6 +11,7 @@ const adminView = document.getElementById('admin-view');
 const permissionDeniedView = document.getElementById('permission-denied-view');
 const userModal = document.getElementById('user-modal');
 const installGuideLink = document.getElementById('install-guide-link');
+const logsModal = document.getElementById('logs-modal');
 const installGuideModal = document.getElementById('install-guide-modal');
 const closeGuideBtn = document.getElementById('close-guide-btn');
 
@@ -199,6 +200,66 @@ async function handleDelete(id, email) {
     }
 }
 
+/**
+ * 載入並顯示近兩日的日誌
+ */
+async function loadLogs() {
+    const logsTableBody = document.getElementById('logs-table-body');
+    logsTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">載入中...</td></tr>`;
+
+    try {
+        // 計算昨天的起始時間
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
+
+        const { data, error } = await supabaseClient
+            .from('logs')
+            .select('created_at, resident_id, command, status, details')
+            .gte('created_at', yesterday.toISOString())
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data.length === 0) {
+            logsTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">近兩日無操作日誌</td></tr>`;
+            return;
+        }
+
+        logsTableBody.innerHTML = data.map(log => {
+            const time = new Date(log.created_at).toLocaleString('zh-TW', {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            const statusClass = log.status === 'success' ? 'status-success' : 'status-failure';
+
+            return `
+                <tr>
+                    <td style="white-space: nowrap;">${time}</td>
+                    <td>${log.resident_id || 'N/A'}</td>
+                    <td>${log.command || ''}</td>
+                    <td><span class="${statusClass}">${log.status}</span></td>
+                    <td class="log-details">${log.details || ''}</td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error("讀取日誌失敗:", error);
+        logsTableBody.innerHTML = `<tr><td colspan="5" style="color: red; text-align: center;">讀取日誌失敗</td></tr>`;
+    }
+}
+
+function openLogsModal() {
+    logsModal.classList.remove('hidden');
+    loadLogs();
+}
+
+
 // --- UI 更新與互動 ---
 
 function showAdminView() {
@@ -210,11 +271,16 @@ function showAdminView() {
     // 渲染管理介面骨架
     adminView.innerHTML = `
         <h1>住戶白名單管理</h1>
+        <div class="admin-actions-grid">
+            <button id="add-new-btn" class="btn">
+                <i class="mdi mdi-plus"></i>新增住戶
+            </button>
+            <button id="view-logs-btn" class="btn">
+                <i class="mdi mdi-clipboard-text-clock-outline"></i>查看日誌
+            </button>
+        </div>
         <div class="toolbar">
             <input type="search" id="search-input" placeholder="依 Google 帳號 或住戶搜尋...">
-            <button id="add-new-btn" class="btn">
-                <i class="mdi mdi-plus" style="margin-right: 4px;"></i>新增住戶
-            </button>
         </div>
         <div class="table-container">
             <table class="user-table">
@@ -340,6 +406,10 @@ function closeModal() {
     userModal.classList.add('hidden');
 }
 
+function closeLogsModal() {
+    logsModal.classList.add('hidden');
+}
+
 // --- 事件綁定與初始化 ---
 document.addEventListener('DOMContentLoaded', () => {
     // --- DEBUG 按鈕可見性控制 ---
@@ -442,6 +512,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Modal 取消按鈕
         if (e.target.closest('#cancel-btn')) {
             closeModal();
+        }
+
+        // 開啟日誌 Modal
+        if (e.target.closest('#view-logs-btn')) {
+            openLogsModal();
+        }
+
+        // 關閉日誌 Modal
+        if (e.target.closest('#close-logs-btn')) {
+            closeLogsModal();
         }
     });
     

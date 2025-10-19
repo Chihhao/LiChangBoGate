@@ -18,6 +18,10 @@
             max-width: 800px; /* 擴大容器以容納表格 */
         }
 
+        #admin-view h1 {
+            margin-bottom: 15px;
+        }
+
         .toolbar {
             display: flex;
             justify-content: space-between;
@@ -44,6 +48,18 @@
             white-space: nowrap;
         }
 
+        .admin-actions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .admin-actions-grid .btn {
+            padding: 10px 15px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .table-container {
             width: 100%;
             overflow-x: auto; /* 在小螢幕上啟用水平滾動 */
@@ -62,6 +78,7 @@
         .user-table th {
             background-color: #f9fafb;
             font-weight: 600;
+            white-space: nowrap; /* [新增] 禁止住戶表格標頭換行 */
         }
         .user-table td .email {
             word-break: break-all;
@@ -109,6 +126,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            align-items: flex-start; /* [新增] 讓 modal 從頂部對齊 */
             z-index: 1000;
         }
 		.modal-overlay.hidden {
@@ -116,14 +134,16 @@
         }
         .modal-content {
             background: white;
-            padding: 25px;
+            padding: 20px;
+            margin-top: 5vh; /* [新增] 距離頂部一些距離 */
             border-radius: 12px;
-            width: 90%;
+            width: 100%;
             max-width: 500px;
             box-shadow: var(--shadow-lg);
         }
         .modal-content h2 {
             margin-top: 0;
+            text-align: center;
         }
         .form-group {
             margin-bottom: 15px;
@@ -161,6 +181,30 @@
             justify-content: flex-end;
             gap: 10px;
             margin-top: 20px;
+        }
+
+        /* --- 日誌 Modal 專用樣式 --- */
+        #logs-modal .modal-content {
+
+            max-width: 800px; /* [修改] 與主卡片寬度一致 */
+        }
+        #logs-table-container {
+            max-height: 65vh; /* 限制表格最大高度 */
+            overflow-y: auto; /* 內容超出時啟用垂直滾動 */
+        }
+        #logs-modal .user-table th, #logs-modal .user-table td {
+            white-space: nowrap; /* [修改] 禁止表格標頭與內容自動換行 */
+        }
+        .status-success {
+            color: #059669;
+            font-weight: 500;
+        }
+        .status-failure {
+            color: #ef4444;
+            font-weight: 500;
+        }
+        .log-details {
+            max-width: 250px; /* 保持最大寬度，但允許內容超出 */
         }
     </style>
 </head>
@@ -239,6 +283,24 @@
                     <button type="submit" id="save-btn" class="btn">儲存</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 查看日誌 Modal -->
+    <div id="logs-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="logs-modal-title">操作日誌 (近兩日)</h2>
+            <div class="table-container" id="logs-table-container">
+                <table class="user-table">
+                    <thead>
+                        <tr><th>時間</th><th>住戶</th><th>指令</th><th>狀態</th><th>詳細資訊</th></tr>
+                    </thead>
+                    <tbody id="logs-table-body"></tbody>
+                </table>
+            </div>
+            <div class="modal-actions">
+                <button id="close-logs-btn" class="btn">關閉</button>
+            </div>
         </div>
     </div>
 
