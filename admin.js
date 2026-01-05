@@ -201,28 +201,28 @@ async function handleDelete(id, email) {
 }
 
 /**
- * 載入並顯示近兩日的日誌
+ * 載入並顯示近五日的日誌
  */
 async function loadLogs() {
     const logsTableBody = document.getElementById('logs-table-body');
     logsTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">載入中...</td></tr>`;
 
     try {
-        // 計算昨天的起始時間
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        yesterday.setHours(0, 0, 0, 0);
+        // 計算起始時間 (近五日)
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 4);
+        startDate.setHours(0, 0, 0, 0);
 
         const { data, error } = await supabaseClient
             .from('logs')
             .select('created_at, resident_id, command, status, details')
-            .gte('created_at', yesterday.toISOString())
+            .gte('created_at', startDate.toISOString())
             .order('created_at', { ascending: false });
 
         if (error) throw error;
 
         if (data.length === 0) {
-            logsTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">近兩日無操作日誌</td></tr>`;
+            logsTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">近五日無操作日誌</td></tr>`;
             return;
         }
 
@@ -256,6 +256,7 @@ async function loadLogs() {
 
 function openLogsModal() {
     logsModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // 禁止背景滾動
     loadLogs();
 }
 
@@ -408,6 +409,7 @@ function closeModal() {
 
 function closeLogsModal() {
     logsModal.classList.add('hidden');
+    document.body.style.overflow = ''; // 恢復背景滾動
 }
 
 // --- 事件綁定與初始化 ---
