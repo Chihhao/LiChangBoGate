@@ -60,24 +60,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
     processCommand(strMsg);
     return;
   }
-
-  // 處理舊 Topic 的指令，並加上日期檢查
-  if (strTopic == TOPIC_OLD) { 
-    struct tm timeinfo;
-    if (!getLocalTime(&timeinfo)) {
-      Serial.println("無法取得時間，舊 Topic 指令被拒絕。");
-      return;
-    }
-
-    int currentYearMonth = (timeinfo.tm_year * 100) + (timeinfo.tm_mon + 1);
-    bool isExpired = currentYearMonth >= 202511; // 檢查是否為 2025 年 11 月或之後
-    if (isExpired) {
-      Serial.println("舊 Topic 已於 2025/11/01 起失效，指令被忽略。");
-      return;
-    }
-
-    processCommand(strMsg);
-  }
 }
 
 void processCommand(String msg) {
@@ -196,9 +178,7 @@ void maintainConnections() {
 
         // 連線成功後，重新訂閱主題
         client.subscribe(TOPIC);
-        client.subscribe(TOPIC_OLD);
         Serial.print("Subscribed to: "); Serial.println(TOPIC);
-        Serial.print("Subscribed to old: "); Serial.println(TOPIC_OLD);
 
         // 發送上線狀態訊息 (只在連線成功當下發送一次)
         String statusTopic = String(TOPIC) + "/status";
