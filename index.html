@@ -10,6 +10,16 @@
     <title>里長伯社區遙控器</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
     <link rel="stylesheet" href="style.css">
+    <style>
+        #confirm-ok-btn {
+            background-color: #dc2626; /* 正常狀態：紅色 */
+            color: white;
+        }
+        #confirm-ok-btn:disabled {
+            background-color: #9ca3af; /* 禁用狀態：灰色 */
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 <body>
 
@@ -84,13 +94,13 @@
                 <span>溫馨提醒：鐵捲門開啟後，將於一分鐘後自動下降，無需手動操作下降。</span>
             </div>
 
-            <button id="front-gate-button" class="btn btn-door" disabled>
+            <button id="front-gate-button" class="btn btn-door">
                 <i class="mdi mdi-gate btn-icon"></i>
                 前棟大門
 				<i class="mdi mdi-gate btn-icon"></i>
             </button> 
 
-            <button id="rear-gate-button" class="btn btn-door" disabled>
+            <button id="rear-gate-button" class="btn btn-door">
                 <i class="mdi mdi-gate btn-icon"></i>
                 後棟大門
                 <i class="mdi mdi-gate btn-icon"></i>
@@ -101,13 +111,13 @@
                 <span>溫馨提醒：請隨手關門！</span>
             </div>
 
-            <button id="food-waste-gate-button" class="btn btn-door" disabled>
+            <button id="food-waste-gate-button" class="btn btn-door">
                 <i class="mdi mdi-trash-can-outline btn-icon"></i>
                 廚餘鐵門
 				<i class="mdi mdi-trash-can-outline btn-icon"></i>
             </button>   
 
-            <button id="recycling-gate-button" class="btn btn-door" disabled>
+            <button id="recycling-gate-button" class="btn btn-door">
                 <i class="mdi mdi-recycle-variant btn-icon"></i>
                 回收鐵門
 				<i class="mdi mdi-recycle-variant btn-icon"></i>
@@ -123,6 +133,18 @@
 
         </div>
 
+    </div>
+
+    <!-- 確認操作 Modal -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="confirm-title" class="modal-title">確認操作</h2>
+            <p id="confirm-message" style="text-align: center;">確定要執行此動作嗎？</p>
+            <div class="modal-actions">
+                <button id="confirm-cancel-btn" class="btn">取消</button>
+                <button id="confirm-ok-btn" class="btn">確認執行</button>
+            </div>
+        </div>
     </div>
 
     <!-- 安裝說明 Modal -->

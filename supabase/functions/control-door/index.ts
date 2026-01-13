@@ -99,7 +99,7 @@ Deno.serve(async (req: Request) => {
       return createJsonResponse({ error: errorMsg }, 403);
     }
 
-    const allowedCommands = ['up', 'stop', 'down'];
+    const allowedCommands = ['up', 'stop', 'down', 'front_gate_open', 'rear_gate_open', 'food_waste_open', 'recycling_open'];
     if (!allowedCommands.includes(command)) {
       return createJsonResponse({ error: `無效的指令: ${command}` }, 400);
     }
@@ -118,7 +118,11 @@ Deno.serve(async (req: Request) => {
     const payloadMap: { [key: string]: string } = {
       up: 'DoorUp',
       stop: 'DoorStop',
-      down: 'DoorDown'
+      down: 'DoorDown',
+      front_gate_open: 'FrontGateOpen',
+      rear_gate_open: 'RearGateOpen',
+      food_waste_open: 'FoodWasteOpen',
+      recycling_open: 'RecyclingOpen'
     };
     const payload = payloadMap[command];
 

@@ -15,15 +15,25 @@ const logoutButton = document.getElementById('logout-button');
 const installGuideLink = document.getElementById('install-guide-link');
 const installGuideModal = document.getElementById('install-guide-modal');
 const closeGuideBtn = document.getElementById('close-guide-btn');
+const confirmModal = document.getElementById('confirm-modal');
+const confirmTitle = document.getElementById('confirm-title');
+const confirmMessage = document.getElementById('confirm-message');
+const confirmOkBtn = document.getElementById('confirm-ok-btn');
+const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
 
 
 const upButton = document.getElementById('up-button');
 const stopButton = document.getElementById('stop-button');
 const downButton = document.getElementById('down-button');
-const controlButtons = [upButton, stopButton, downButton];
+const frontGateButton = document.getElementById('front-gate-button');
+const rearGateButton = document.getElementById('rear-gate-button');
+const foodWasteGateButton = document.getElementById('food-waste-gate-button');
+const recyclingGateButton = document.getElementById('recycling-gate-button');
+const controlButtons = [upButton, stopButton, downButton, frontGateButton, rearGateButton, foodWasteGateButton, recyclingGateButton];
 
 // 模擬一個使用者物件，實際情況會從 Supabase 取得
 let currentUser = null;
+let pendingAction = null; // 用來暫存待確認的動作
 
 // --- 事件監聽 ---
 loginButton.addEventListener('click', handleGoogleLogin);
@@ -41,10 +51,39 @@ if (closeGuideBtn) {
     closeGuideBtn.addEventListener('click', () => installGuideModal.classList.add('hidden'));
 }
 
+// 確認視窗 Modal 的事件監聽
+confirmCancelBtn.addEventListener('click', hideConfirm);
+confirmOkBtn.addEventListener('click', () => {
+    if (pendingAction) {
+        pendingAction(); // 執行被暫存的動作
+    }
+    hideConfirm();
+});
 
-upButton.addEventListener('click', () => controlDoor('up'));
-stopButton.addEventListener('click', () => controlDoor('stop'));
-downButton.addEventListener('click', () => controlDoor('down'));
+
+upButton.addEventListener('click', () => {
+    showConfirm('開啟鐵捲門', () => controlDoor('up'));
+});
+stopButton.addEventListener('click', () => {
+    showConfirm('停止鐵捲門', () => controlDoor('stop'));
+});
+downButton.addEventListener('click', () => {
+    showConfirm('關閉鐵捲門', () => controlDoor('down'));
+});
+frontGateButton.addEventListener('click', () => {
+    showConfirm('開啟前棟大門(測試中)', () => controlDoor('front_gate_open'));
+});
+rearGateButton.addEventListener('click', () => {
+    showConfirm('開啟後棟大門(測試中)', () => controlDoor('rear_gate_open'));
+});
+foodWasteGateButton.addEventListener('click', () => {
+    // 使用新的 enable=false 參數，並提供自訂訊息
+    showConfirm('開啟廚餘鐵門', () => controlDoor('food_waste_open'), '此功能尚未開放，敬請期待。', false);
+});
+recyclingGateButton.addEventListener('click', () => {
+    // 使用新的 enable=false 參數，並提供自訂訊息
+    showConfirm('開啟回收鐵門', () => controlDoor('recycling_open'), '此功能尚未開放，敬請期待。', false);
+});
 
 // --- 核心函式 ---
 
@@ -266,6 +305,33 @@ function setControlsDisabled(isDisabled) {
     controlButtons.forEach(button => {
         button.disabled = isDisabled;
     });
+}
+
+/**
+ * @description 顯示確認視窗
+ * @param {string} title - 視窗標題
+ * @param {Function} action - 使用者點擊確認後要執行的回呼函式
+ * @param {string} [message] - (可選) 要顯示的訊息，若不提供則使用預設值。
+ * @param {boolean} [enable=true] - (可選) 是否啟用確認按鈕。
+ */
+function showConfirm(title, action, message = '無需在門附近即可操作，請謹慎使用。', enable = true) {
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = message;
+    pendingAction = action;
+
+    // 根據 enable 參數設定確認按鈕的狀態
+    confirmOkBtn.disabled = !enable;
+
+    confirmModal.classList.remove('hidden');
+}
+
+/**
+ * @description 隱藏確認視窗
+ */
+function hideConfirm() {
+    confirmModal.classList.add('hidden');
+    pendingAction = null;
+    confirmOkBtn.disabled = false; // 確保關閉時重設按鈕狀態
 }
 
 // --- 程式進入點 ---
