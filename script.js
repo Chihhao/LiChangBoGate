@@ -10,6 +10,7 @@ const controlView = document.getElementById('control-view');
 const systemMessage = document.getElementById('system-message');
 
 const loginButton = document.getElementById('login-button');
+const lineLoginButton = document.getElementById('line-login-button');
 const debugLoginButton = document.getElementById('debug-login-button');
 const logoutButton = document.getElementById('logout-button');
 const installGuideLink = document.getElementById('install-guide-link');
@@ -37,6 +38,9 @@ let pendingAction = null; // 用來暫存待確認的動作
 
 // --- 事件監聽 ---
 loginButton.addEventListener('click', handleGoogleLogin);
+if (lineLoginButton) {
+    lineLoginButton.addEventListener('click', () => showConfirm('功能開發中', () => {}, 'LINE 登入功能尚未開放，敬請期待。', false));
+}
 debugLoginButton.addEventListener('click', handleDebugLogin);
 logoutButton.addEventListener('click', handleLogout); 
 

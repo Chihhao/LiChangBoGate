@@ -118,10 +118,15 @@ p {
     margin-right: 12px;
 }
 
+/* --- LINE 登入按鈕 --- */
+.btn-line-login {
+    margin-top: 15px;
+}
+
 .btn-door {
     padding: 10px 16px; 
     font-size: 40px;
-	background-color: #F3F4F6; /* [更新] 質感淺灰色 */
+	background-color: #F3F4F6; /* 質感淺灰色 */
     white-space: nowrap; /* 限制文字不換行 */
 }
 
@@ -223,7 +228,6 @@ p {
     margin-top: 20px;
 }
 
-
 /* --- 按鈕焦點效果 --- */
 .btn:focus-visible {
     outline: 2px solid var(--primary-color);
@@ -246,7 +250,7 @@ p {
 /* --- 警告訊息樣式 --- */
 .warning-notice {
     background-color: #FEF2F2; /* 淡紅色背景 */
-    color: #991B1B;  /* [更新] 深紅色文字 */
+    color: #991B1B;  /* 深紅色文字 */
     padding: 10px 14px; 
     border-radius: 8px;
     margin-bottom: 15px; 
