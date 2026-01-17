@@ -9,6 +9,10 @@
 #define PIN_RELAY_1 16
 #define PIN_RELAY_2 17
 #define PIN_RELAY_3 18
+#define PIN_FRONT_GATE 19
+#define PIN_REAR_GATE 21
+#define PIN_FOOD_WASTE 22
+#define PIN_RECYCLING 23
 #define RELAY_ON HIGH
 #define RELAY_OFF !RELAY_ON
 #define PIN_TRIG  33  //發出聲波腳位
@@ -18,6 +22,7 @@
 const unsigned long WIFI_RECONNECT_INTERVAL = 30000; // Wi-Fi 斷線後重連間隔 (ms)
 const unsigned long MQTT_RECONNECT_INTERVAL = 5000;  // MQTT 斷線後重連間隔 (ms)
 const unsigned long DAILY_REBOOT_INTERVAL_MS = 24 * 3600 * 1000UL; // 每日重啟間隔 (24小時)
+const unsigned long WIFI_OFFLINE_REBOOT_TIMEOUT = 3600000; // Wi-Fi 斷線超時重啟 (1小時)
 
 // --- 超音波感測器常數定義 ---
 const unsigned long SENSOR_TRIG_DISTANCE_MIN = 10;   // 觸發感測的最小距離 (cm)
@@ -38,6 +43,14 @@ const int   daylightOffset_sec = 0;
 const char* MSG_UP = "DoorUp";
 const char* MSG_STOP = "DoorStop";
 const char* MSG_DOWN = "DoorDown";
+const char* MSG_FRONT_GATE_OPEN = "FrontGateOpen";
+const char* MSG_REAR_GATE_OPEN = "RearGateOpen";
+const char* MSG_FOOD_WASTE_OPEN = "FoodWasteOpen";
+const char* MSG_RECYCLING_OPEN = "RecyclingOpen";
+
+int wifi_retry_index = 0; // 目前嘗試的 Wi-Fi 索引 (0~2)
+bool hasConnectedSinceBoot = false; // 是否自開機後已成功連線過
+unsigned long wifiOfflineStartTime = 0; // 記錄 Wi-Fi 斷線起始時間
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -70,6 +83,15 @@ void processCommand(String msg) {
   } else if (msg == MSG_DOWN) {
     triggerRelay(PIN_RELAY_3, "DOWN");
   }
+  else if (msg == MSG_FRONT_GATE_OPEN) {
+    triggerRelay(PIN_FRONT_GATE, "FrontGateOpen");
+  } else if (msg == MSG_REAR_GATE_OPEN) {
+    triggerRelay(PIN_REAR_GATE, "RearGateOpen");
+  } else if (msg == MSG_FOOD_WASTE_OPEN) {
+    triggerRelay(PIN_FOOD_WASTE, "FoodWasteOpen");
+  } else if (msg == MSG_RECYCLING_OPEN) {
+    triggerRelay(PIN_RECYCLING, "RecyclingOpen");
+  }
   else Serial.println("Unknown command received.");
 }
 
@@ -83,18 +105,42 @@ void setup() {
   pinMode(PIN_RELAY_1, OUTPUT);
   pinMode(PIN_RELAY_2, OUTPUT);
   pinMode(PIN_RELAY_3, OUTPUT);
+  pinMode(PIN_FRONT_GATE, OUTPUT);
+  pinMode(PIN_REAR_GATE, OUTPUT);
+  pinMode(PIN_FOOD_WASTE, OUTPUT);
+  pinMode(PIN_RECYCLING, OUTPUT);
   
   Serial.begin(9600);
   delay(50); 
   Serial.println("Booting");
   
-  WiFi.begin(ssid,password);  
+  // 初始連線嘗試第一組
+  Serial.printf("Connecting to WiFi: %s\n", ssid_list[wifi_retry_index]);
+  WiFi.begin(ssid_list[wifi_retry_index], password_list[wifi_retry_index]);
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
   OTA_Begin();
 
-  xTaskCreatePinnedToCore(Task_Sr04,"TaskSr04",2048,NULL,0,NULL,0); 
+  // --- 超音波感測器自動偵測 (Auto-Detect) ---
+  Serial.println("Detecting Ultrasonic Sensor...");
+  bool sensorConnected = false;
+  // 嘗試讀取一次距離，若非無效值則視為有連接
+  // 為了保險起見，可以嘗試幾次
+  for(int i=0; i<3; i++) {
+    if (GetDistance() != INVALID_DISTANCE) {
+      sensorConnected = true;
+      break;
+    }
+    delay(50);
+  }
+
+  if (sensorConnected) {
+    Serial.println("Sensor Detected. Starting Task_Sr04.");
+    xTaskCreatePinnedToCore(Task_Sr04,"TaskSr04",2048,NULL,0,NULL,0); 
+  } else {
+    Serial.println("Sensor NOT Detected. Task_Sr04 skipped.");
+  }
 
 }
 
@@ -144,8 +190,24 @@ void OTA_Begin(){
 void maintainConnections() {
   unsigned long currentMillis = millis();
 
+  // 如果目前已連線，標記為成功連線過
+  if (WiFi.status() == WL_CONNECTED) {
+    hasConnectedSinceBoot = true;
+    wifiOfflineStartTime = 0; // 重置斷線計時
+  } else if (wifiOfflineStartTime == 0) {
+    // 若斷線且計時器為 0，開始計時
+    wifiOfflineStartTime = currentMillis;
+  }
+
   // --- 1. 維護 Wi-Fi 連線 ---
   if (WiFi.status() != WL_CONNECTED) {
+    // 檢查是否斷線超過 1 小時
+    if (currentMillis - wifiOfflineStartTime >= WIFI_OFFLINE_REBOOT_TIMEOUT) {
+      Serial.println("Wi-Fi offline for over 1 hour. Rebooting...");
+      delay(100);
+      ESP.restart();
+    }
+
     // 如果 Wi-Fi 斷線，MQTT 必定也無法連線，所以先處理 Wi-Fi
     digitalWrite(LED_BUILTIN, LOW); // 熄滅 LED 燈號表示斷線
     
@@ -153,7 +215,17 @@ void maintainConnections() {
     if (currentMillis - wifiReconnectPrevMillis >= WIFI_RECONNECT_INTERVAL) {
       Serial.println("Reconnecting to WiFi...");
       WiFi.disconnect();
-      WiFi.reconnect();
+      
+      // 若尚未成功連線過，則輪流嘗試；若曾連線成功，則鎖定該組 SSID 重連
+      if (!hasConnectedSinceBoot) {
+        wifi_retry_index = (wifi_retry_index + 1) % 3;
+        Serial.printf("Switching to WiFi: %s\n", ssid_list[wifi_retry_index]);
+      } else {
+        Serial.printf("Retrying fixed WiFi: %s\n", ssid_list[wifi_retry_index]);
+      }
+      
+      WiFi.begin(ssid_list[wifi_retry_index], password_list[wifi_retry_index]);
+      
       wifiReconnectPrevMillis = currentMillis;
     }
     return; // Wi-Fi 沒連上，直接返回，不做後續 MQTT 檢查
