@@ -82,11 +82,11 @@ rearGateButton.addEventListener('click', () => {
 });
 foodWasteGateButton.addEventListener('click', () => {
     // 使用新的 enable=false 參數，並提供自訂訊息
-    showConfirm('開啟廚餘鐵門(測試中)', () => controlDoor('food_waste_open'));
+    showConfirm('開啟廚餘鐵門', () => controlDoor('food_waste_open'));
 });
 recyclingGateButton.addEventListener('click', () => {
     // 使用新的 enable=false 參數，並提供自訂訊息
-    showConfirm('開啟回收鐵門(測試中)', () => controlDoor('recycling_open'));
+    showConfirm('開啟回收鐵門', () => controlDoor('recycling_open'));
 });
 
 // --- 核心函式 ---
