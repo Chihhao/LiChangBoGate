@@ -134,8 +134,13 @@ graph TD
 3.  **取得 API 金鑰**:
     - 前往 `Project Settings` > `API`。
     - 複製 `Project URL` 和 `anon public` 金鑰。
-4.  **設定 Google 登入**:
-    - 前往 `Authentication` > `Providers`，啟用 Google 並依照官方文件設定。
+4.  **設定 Google 登入 (重要)**:
+    - 前往 `Authentication` > `Providers`，啟用 Google。
+    - **Google Cloud 設定**:
+      - 在 Google Cloud Console 建立 OAuth 2.0 用戶端 ID（網頁應用程式）。
+      - **已授權的重新導向 URI**: 必須填入 Supabase 提供的 Callback URL (例如 `https://[REF].supabase.co/auth/v1/callback`)。
+      - **發布狀態**: 務必將「OAuth 同意畫面」的發布狀態改為 **「實際運作中 (In Production)」**，否則會有 100 位使用者的上限。
+    - 將產生的 `Client ID` 與 `Client Secret` 貼回 Supabase 設定並儲存。
 
 ### 3. 前端 (Web App)
 

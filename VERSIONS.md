@@ -48,3 +48,22 @@
 | **@supabase/functions-js**| (edge-runtime)                  | Supabase Edge Function 的執行環境定義。 |
 | **@supabase/supabase-js** | `npm:@supabase/supabase-js@2`   | 用於在後端驗證使用者及操作資料庫。 |
 | **mqtt**                  | `npm:mqtt`                      | 用於在後端發布 MQTT 指令的函式庫。   |
+
+---
+
+## 維護紀錄 (Maintenance Logs)
+
+### 2026.03.02 - Google OAuth 重大修復與環境重建
+
+- **問題診斷**: 
+  - 使用者反應無法登入，錯誤碼為 `401 deleted_client`。
+  - 原因是原本的 Google Cloud 專案被誤刪，導致 OAuth 憑證永久失效。
+- **處理動作**:
+  - **重建基礎設施**: 建立全新的 Google Cloud 專案 `LiChangBoGate-New` (ID: `lichangbogate-new`)。
+  - **OAuth 設定**:
+    - 重新配置「OAuth 同意畫面」，並直接發布至 **「正式運作 (In Production)」** 狀態，解除 100 位測試使用者的限制，支持社區大規模使用。
+    - 手動添加 `email`, `profile`, `openid` 非機密權限。
+  - **同步配置**: 
+    - 將新專案的 `Client ID` 與 `Client Secret` 更新至 Supabase Authentication。
+    - 刪除已失效的舊專案資源，確保環境整潔。
+- **結果**: 登入功能全面恢復正常，且支援人數上限由 100 人提升至正式規範。
