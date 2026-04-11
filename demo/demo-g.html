@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Demo G</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
+            --divider: #E2E8F0;
+
+            /* 鐵捲門 - 藍色系 */
+            --door-bg: #DBEAFE;
+            --door-border: #93C5FD;
+            --door-active-bg: #1D4ED8;
+            --door-text: #1E3A5F;
+
+            /* 大門 - 綠色系 */
+            --gate-bg: #D1FAE5;
+            --gate-border: #6EE7B7;
+            --gate-active-bg: #047857;
+            --gate-text: #14532D;
+
+            /* 廚餘回收 - 琥珀色系 */
+            --waste-bg: #FEF3C7;
+            --waste-border: #FCD34D;
+            --waste-active-bg: #B45309;
+            --waste-text: #713F12;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Lexend', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #ffffff;
+            color: var(--text-primary);
+            padding: 10px 12px;
+            padding-top: max(10px, env(safe-area-inset-top));
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
+            min-height: 100svh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* --- Header --- */
+        .header {
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .header h1 {
+            font-size: clamp(28px, 8vw, 38px);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .header .subtitle {
+            font-size: clamp(18px, 5vw, 24px);
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        /* --- Notice --- */
+        .notice {
+            background: #FEF2F2;
+            color: #991B1B;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: clamp(11px, 3vw, 13px);
+            text-align: left;
+            display: flex;
+            align-items: center;
+            line-height: 1.4;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .notice .mdi {
+            font-size: 16px;
+            margin-right: 6px;
+            flex-shrink: 0;
+        }
+
+        /* --- Section --- */
+        .section { margin-bottom: 8px; }
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            padding-bottom: 4px;
+            border-bottom: 1.5px solid var(--divider);
+            margin-bottom: 6px;
+        }
+        .section-label {
+            font-size: clamp(16px, 4.5vw, 20px);
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        .section-tip {
+            font-size: clamp(12px, 3.2vw, 15px);
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        /* --- Button Group --- */
+        .btn-group {
+            display: grid;
+            gap: 8px;
+        }
+        .col-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .col-2 { grid-template-columns: 1fr 1fr; }
+
+        /* --- Button Base --- */
+        .btn {
+            height: clamp(68px, 20vw, 95px);
+            font-family: 'Lexend', sans-serif;
+            font-size: clamp(22px, 6.5vw, 34px);
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            border-radius: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(2px, 0.8vw, 5px);
+            transition: transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn:focus-visible {
+            outline: 3px solid #3B82F6;
+            outline-offset: 2px;
+        }
+        .btn .mdi { font-size: 0.8em; }
+
+        /* --- 鐵捲門按鈕 - 藍色 --- */
+        .btn-door {
+            background: var(--door-bg);
+            color: var(--door-text);
+            border: 2px solid var(--door-border);
+        }
+        .btn-door:active {
+            background: var(--door-active-bg);
+            color: white;
+            border-color: var(--door-active-bg);
+        }
+
+        /* --- 大門按鈕 - 綠色 --- */
+        .btn-gate {
+            background: var(--gate-bg);
+            color: var(--gate-text);
+            border: 2px solid var(--gate-border);
+        }
+        .btn-gate:active {
+            background: var(--gate-active-bg);
+            color: white;
+            border-color: var(--gate-active-bg);
+        }
+
+        /* --- 廚餘回收按鈕 - 琥珀色 --- */
+        .btn-waste {
+            background: var(--waste-bg);
+            color: var(--waste-text);
+            border: 2px solid var(--waste-border);
+        }
+        .btn-waste:active {
+            background: var(--waste-active-bg);
+            color: white;
+            border-color: var(--waste-active-bg);
+        }
+
+        /* --- Logout --- */
+        .btn-logout {
+            width: 100%;
+            height: 38px;
+            margin-top: 10px;
+            font-family: 'Lexend', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: #F8FAFC;
+            background: #94A3B8;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-logout:active { background: #475569; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .btn { transition: none; }
+            .btn:active { transform: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>里長伯社區遙控器</h1>
+        <span class="subtitle">G6 住戶您好！</span>
+    </div>
+
+    <div class="notice">
+        <i class="mdi mdi-information-outline"></i>
+        <span>遠端控制，無需在門附近即可操作，請謹慎使用。</span>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <span class="section-label">鐵捲門</span>
+            <span class="section-tip">開啟後一分鐘自動下降</span>
+        </div>
+        <div class="btn-group col-3">
+            <button class="btn btn-door"><i class="mdi mdi-arrow-up-bold"></i>上升</button>
+            <button class="btn btn-door"><i class="mdi mdi-stop"></i>停止</button>
+            <button class="btn btn-door"><i class="mdi mdi-arrow-down-bold"></i>下降</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <span class="section-label">大門</span>
+            <span class="section-tip">請隨手關門</span>
+        </div>
+        <div class="btn-group col-2">
+            <button class="btn btn-gate"><i class="mdi mdi-gate"></i>後棟大門</button>
+            <button class="btn btn-gate"><i class="mdi mdi-gate"></i>前棟大門</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <span class="section-label">廚餘回收</span>
+            <span class="section-tip">丟完請關鐵門</span>
+        </div>
+        <div class="btn-group col-2">
+            <button class="btn btn-waste"><i class="mdi mdi-trash-can-outline"></i>廚餘鐵門</button>
+            <button class="btn btn-waste"><i class="mdi mdi-recycle-variant"></i>回收鐵門</button>
+        </div>
+    </div>
+
+    <button class="btn-logout">登出</button>
+</body>
+</html>

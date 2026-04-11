@@ -11,6 +11,24 @@
     --border-color: #e5e7eb;
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+    /* 鐵捲門 - 藍色系 */
+    --roller-bg: #DBEAFE;
+    --roller-border: #93C5FD;
+    --roller-active-bg: #1D4ED8;
+    --roller-text: #1E3A5F;
+
+    /* 大門 - 綠色系 */
+    --gate-bg: #D1FAE5;
+    --gate-border: #6EE7B7;
+    --gate-active-bg: #047857;
+    --gate-text: #14532D;
+
+    /* 廚餘回收 - 琥珀色系 */
+    --waste-bg: #FEF3C7;
+    --waste-border: #FCD34D;
+    --waste-active-bg: #B45309;
+    --waste-text: #713F12;
 }
 
 * {
@@ -18,15 +36,15 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Lexend', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background-color: var(--background-color);
     color: var(--text-primary);
     margin: 0;
-    padding: 0; /* 移除所有 padding */
+    padding: 0;
     display: flex;
     justify-content: center;
-    align-items: center; 
-    min-height: 100svh; /* 使用最小可視區域高度，避免瀏覽器 UI 造成捲動 */
+    align-items: center;
+    min-height: 100svh;
     text-align: center;
 }
 
@@ -34,13 +52,17 @@ body {
 .container {
     width: 100%;
     max-width: 420px;
+    margin: 10px;
+    transition: all 0.2s ease;
+}
+
+/* --- 登入區塊卡片樣式 --- */
+#login-view {
     padding: 24px;
     background: var(--card-bg);
     border-radius: 16px;
     box-shadow: var(--shadow-lg);
     border: 1px solid var(--border-color);
-    margin: 15px; /* 在容器周圍加上邊距，而不是在 body 上 */
-    transition: all 0.2s ease;
 }
 
 h1 {
@@ -62,10 +84,10 @@ p {
     transition: color 0.3s ease-in-out;
 }
 
-/* --- 按鈕通用樣式 --- */
+/* --- 按鈕通用樣式（登入頁、Modal 用） --- */
 .btn {
     width: 100%;
-    padding: 14px 20px; 
+    padding: 14px 20px;
     font-size: 22px;
     font-weight: 500;
     border: 1px solid var(--border-color);
@@ -74,7 +96,7 @@ p {
     background: var(--card-bg);
     color: var(--text-primary);
     transition: all 0.2s ease;
-    margin-bottom: 15px; 
+    margin-bottom: 15px;
     box-shadow: var(--shadow);
 }
 
@@ -103,13 +125,12 @@ p {
     border-color: var(--border-color);
 }
 
-/* --- 特定按鈕樣式 --- */
+/* --- 登入按鈕樣式 --- */
 .btn-login {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 0px; 
-
+    margin-bottom: 0px;
 }
 
 .btn-login-icon {
@@ -123,14 +144,7 @@ p {
     margin-top: 15px;
 }
 
-.btn-door {
-    padding: 10px 16px; 
-    font-size: 40px;
-	background-color: #F3F4F6; /* 質感淺灰色 */
-    white-space: nowrap; /* 限制文字不換行 */
-}
-
-/* 登出按鈕樣式 */
+/* --- 登出按鈕樣式（登入頁用） --- */
 .btn-logout {
     padding: 8px 16px;
     font-size: 14px;
@@ -138,8 +152,8 @@ p {
     color: white;
     background-color: var(--secondary-color);
     border-color: var(--secondary-color);
-    margin-top: 16px; 
-	margin-bottom: 0px; 
+    margin-top: 16px;
+    margin-bottom: 0px;
 }
 
 .btn-logout:hover {
@@ -158,7 +172,7 @@ p {
     background-color: #fee2e2;
     border-color: #fca5a5;
     color: #991b1b;
-    transform: translateY(-1px); /* 保持與其他按鈕一致的 hover 效果 */
+    transform: translateY(-1px);
 }
 
 /* --- 安裝說明連結 --- */
@@ -174,7 +188,183 @@ p {
     color: var(--text-primary);
 }
 
-/* --- 彈出式視窗 (Modal) --- */
+/* =============================================
+   控制頁面樣式
+   ============================================= */
+
+/* --- 控制頁面佈局 --- */
+#control-view {
+    padding: 0 4px;
+}
+
+/* --- 控制頁面標題 --- */
+.ctrl-header {
+    text-align: center;
+    margin-bottom: 4px;
+}
+.ctrl-header h1 {
+    font-size: clamp(28px, 8vw, 38px);
+    margin-bottom: 0;
+}
+.ctrl-header p {
+    font-size: clamp(18px, 5vw, 24px);
+    margin-bottom: 8px;
+}
+
+/* --- 控制頁面提醒 --- */
+.ctrl-notice {
+    background: #FEF2F2;
+    color: #991B1B;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: clamp(11px, 3vw, 13px);
+    text-align: left;
+    display: flex;
+    align-items: center;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+.ctrl-notice .mdi {
+    font-size: 16px;
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+
+/* --- 控制區段 --- */
+.ctrl-section {
+    margin-bottom: 8px;
+}
+.ctrl-section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 4px;
+    border-bottom: 1.5px solid #E2E8F0;
+    margin-bottom: 6px;
+}
+.ctrl-section-label {
+    font-size: clamp(16px, 4.5vw, 20px);
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+.ctrl-section-tip {
+    font-size: clamp(12px, 3.2vw, 15px);
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+/* --- 按鈕群組 Grid --- */
+.ctrl-btn-group {
+    display: grid;
+    gap: 8px;
+}
+.col-3 { grid-template-columns: 1fr 1fr 1fr; }
+.col-2 { grid-template-columns: 1fr 1fr; }
+
+/* --- 控制按鈕基礎樣式 --- */
+.ctrl-btn {
+    height: clamp(68px, 20vw, 95px);
+    font-family: 'Lexend', sans-serif;
+    font-size: clamp(22px, 6.5vw, 34px);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    border-radius: 14px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(2px, 0.8vw, 5px);
+    transition: transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+.ctrl-btn:active {
+    transform: scale(0.96);
+}
+.ctrl-btn:focus-visible {
+    outline: 3px solid #3B82F6;
+    outline-offset: 2px;
+}
+.ctrl-btn .mdi {
+    font-size: 0.8em;
+}
+.ctrl-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    filter: grayscale(0.4);
+}
+
+/* --- 鐵捲門按鈕 - 藍色 --- */
+.ctrl-roller {
+    background: var(--roller-bg);
+    color: var(--roller-text);
+    border: 2px solid var(--roller-border);
+}
+.ctrl-roller:active:not(:disabled) {
+    background: var(--roller-active-bg);
+    color: white;
+    border-color: var(--roller-active-bg);
+}
+
+/* --- 大門按鈕 - 綠色 --- */
+.ctrl-gate {
+    background: var(--gate-bg);
+    color: var(--gate-text);
+    border: 2px solid var(--gate-border);
+}
+.ctrl-gate:active:not(:disabled) {
+    background: var(--gate-active-bg);
+    color: white;
+    border-color: var(--gate-active-bg);
+}
+
+/* --- 廚餘回收按鈕 - 琥珀色 --- */
+.ctrl-waste {
+    background: var(--waste-bg);
+    color: var(--waste-text);
+    border: 2px solid var(--waste-border);
+}
+.ctrl-waste:active:not(:disabled) {
+    background: var(--waste-active-bg);
+    color: white;
+    border-color: var(--waste-active-bg);
+}
+
+/* --- 控制頁登出按鈕 --- */
+.ctrl-logout {
+    width: 100%;
+    height: 38px;
+    margin-top: 10px;
+    font-family: 'Lexend', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #F8FAFC;
+    background: #94A3B8;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.ctrl-logout:active {
+    background: #475569;
+}
+
+/* --- Reduced Motion --- */
+@media (prefers-reduced-motion: reduce) {
+    .ctrl-btn {
+        transition: none;
+    }
+    .ctrl-btn:active {
+        transform: none;
+    }
+}
+
+/* =============================================
+   彈出式視窗 (Modal)
+   ============================================= */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -234,27 +424,19 @@ p {
     outline-offset: 2px;
 }
 
-/* --- 控制按鈕圖標 --- */
-.btn-icon {
-    margin-right: 8px;
-	margin-left: 8px;
-    font-size: 40px;
-    vertical-align: middle;
-}
-
 /* --- 區塊顯示/隱藏 --- */
 .hidden {
     display: none;
 }
 
-/* --- 警告訊息樣式 --- */
+/* --- 警告訊息樣式（登入頁用） --- */
 .warning-notice {
-    background-color: #FEF2F2; /* 淡紅色背景 */
-    color: #991B1B;  /* 深紅色文字 */
-    padding: 10px 14px; 
+    background-color: #FEF2F2;
+    color: #991B1B;
+    padding: 10px 14px;
     border-radius: 8px;
-    margin-bottom: 15px; 
-    font-size: 13px; 
+    margin-bottom: 15px;
+    font-size: 13px;
     text-align: left;
     display: flex;
     align-items: center;
@@ -266,14 +448,14 @@ p {
     margin-right: 10px;
 }
 
-/* --- 提示訊息樣式 --- */
+/* --- 提示訊息樣式（登入頁用） --- */
 .info-notice {
     background-color: #eef2ff;
     color: #4338ca;
-    padding: 10px 14px; 
+    padding: 10px 14px;
     border-radius: 8px;
-    margin-bottom: 15px; 
-    font-size: 13px; 
+    margin-bottom: 15px;
+    font-size: 13px;
     text-align: left;
     display: flex;
     align-items: center;
