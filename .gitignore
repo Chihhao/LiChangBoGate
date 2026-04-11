@@ -16,3 +16,6 @@
 
 # Sensitive credentials
 esp32_door_mqtt/credentials.h
+
+# Claude Code
+CLAUDE.md
