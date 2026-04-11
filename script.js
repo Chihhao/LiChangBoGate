@@ -101,7 +101,7 @@ async function handleGoogleLogin() {
             redirectTo: `${window.location.origin}${window.location.pathname}`,
             // 解決 PWA 中 Google 登入被阻擋 (disallowed_useragent) 的問題
             queryParams: {
-                prompt: 'consent',
+                prompt: 'select_account',
             }
         }
     });
