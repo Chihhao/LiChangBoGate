@@ -368,16 +368,18 @@ async function checkInitialSession() {
 checkInitialSession();
 
 /**
- * @description 根據當前 URL 決定是否顯示 DEBUG 按鈕
+ * @description 根據當前 URL 決定是否顯示 DEBUG 按鈕 (預設隱藏，只在白名單 origin 顯示)
  */
 function handleDebugButtonVisibility() {
     const allowedDebugOrigins = ['http://127.0.0.1:5500', 'http://10.0.4.58:5500'];
     const currentOrigin = window.location.origin;
 
-    if (debugLoginButton && !allowedDebugOrigins.includes(currentOrigin)) {
-        debugLoginButton.style.display = 'none';
+    if (debugLoginButton && allowedDebugOrigins.includes(currentOrigin)) {
+        debugLoginButton.style.display = '';
     }
 }
+
+handleDebugButtonVisibility();
 
 // --- iOS 安裝提示邏輯 ---
 /**
@@ -412,9 +414,6 @@ if ('serviceWorker' in navigator) {
         
         // 頁面載入後，檢查是否要顯示 iOS 提示
         showIosInstallPrompt();
-
-        // 頁面載入後，檢查是否顯示 DEBUG 按鈕
-        handleDebugButtonVisibility();
     });
 }
 
