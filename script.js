@@ -92,9 +92,30 @@ recyclingGateButton.addEventListener('click', () => {
 // --- 核心函式 ---
 
 /**
+ * @description 偵測是否為 LINE 內建瀏覽器 (iOS/Android UA 都會帶 "Line/")
+ */
+function isLineInAppBrowser() {
+    return /\bLine\//i.test(navigator.userAgent);
+}
+
+/**
  * @description 處理 Google 登入邏輯，導向 Google 進行 OAuth 驗證
  */
 async function handleGoogleLogin() {
+    // LINE 內建瀏覽器會被 Google 以 disallowed_useragent 封鎖。
+    // 加上 ?openExternalBrowser=1 後 LINE 會自動以系統預設瀏覽器開啟此頁面。
+    if (isLineInAppBrowser()) {
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has('openExternalBrowser')) {
+            url.searchParams.set('openExternalBrowser', '1');
+            window.location.href = url.toString();
+            return;
+        }
+        // 已嘗試跳轉但仍在 LINE 內 (老版本不支援該參數)，改顯示文字提示讓使用者手動處理
+        updateSystemMessage('請點右上角選單，選擇「在預設瀏覽器中開啟」後再登入。', 'danger');
+        return;
+    }
+
     const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {
